@@ -3,8 +3,6 @@
 **insert mode with no mercy.**
 _A Neovim plugin that supercharges Insert Mode with modern editing behavior._
 
-Author: Dario Colombotto – [dario.colombotto@outlook.com](mailto:dario.colombotto@outlook.com)
-
 ## Vision
 
 - **Normal Mode**: stays pure, maintain your Vim proficiency and benefit from its full power. Use hjkl + Vim's keybindings.
