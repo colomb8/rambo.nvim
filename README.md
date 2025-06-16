@@ -1,7 +1,10 @@
 # rambo.nvim
 
 **insert mode with no mercy.**
+
 _A Neovim plugin that supercharges Insert Mode with modern editing behavior._
+
+![Alt text](https://i.imgur.com/w6gPgFJ.jpeg)
 
 ## Vision
 
