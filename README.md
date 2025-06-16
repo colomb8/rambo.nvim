@@ -4,7 +4,7 @@
 
 _A Neovim plugin that supercharges Insert Mode with modern editing behavior._
 
-![Alt text](https://i.imgur.com/w6gPgFJ.jpeg)
+<img src="https://i.imgur.com/w6gPgFJ.jpeg" alt="Alt text" width="400"/>
 
 ## Vision
 
