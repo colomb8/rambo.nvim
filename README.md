@@ -3,7 +3,8 @@
 A Neovim plugin that supercharges Insert Mode with modern editing behavior.
 
 <img src="media/Rambo-1200x900.jpg" alt="insert mode with no mercy" width="300"/>
-*Image used under fair use, for illustrative and non-commercial purposes. All rights to the character and image belong to their respective owners.*
+
+>Image used under fair use, for illustrative and non-commercial purposes. All rights to the character and image belong to their respective owners.
 
 ## Vision
 
@@ -60,7 +61,7 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
 >setup() is optional — call it only if you want to override defaults.
 
 Configuration:
-- 'C' for Ctrl or 'M' for Meta(Alt); it sets the key Copy/Cut/Paste/Search [...]; default is 'C'.
+- `C` for Ctrl or `M` for Meta(Alt); it sets the key Copy/Cut/Paste/Search [...]; default is `C`.
 
 
 ## Roadmap
