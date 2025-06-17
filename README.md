@@ -1,8 +1,7 @@
 # rambo.nvim - insert mode with no mercy
 
 A Neovim plugin that supercharges Insert Mode with modern editing behavior.
-
-<img src="media/Rambo-1200x900.jpg" alt="insert mode with no mercy" width="300"/>
+<p align="center"><img src="media/Rambo-1200x900.jpg" alt="insert mode with no mercy" width="300"/></p>
 
 >Image used under fair use, for illustrative and non-commercial purposes. All rights to the character and image belong to their respective owners.
 
@@ -13,7 +12,7 @@ A Neovim plugin that supercharges Insert Mode with modern editing behavior.
 
 The idea isn't to replace Normal Mode, but to elevate Insert Mode — making it ideal for lightweight, quick and (perhaps not-so) dirty edits without ever leaving it.
 
-<img src="media/lovethesekeys.jpg" alt="Love these keys..." width="200"/>
+<p align="center"><img src="media/lovethesekeys.jpg" alt="Love these keys..." width="200"/></p>
 
 ## Why this approach?
 
