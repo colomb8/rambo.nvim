@@ -12,6 +12,7 @@ A Neovim plugin that supercharges Insert Mode with modern editing behavior.
 
 The idea isn't to replace Normal Mode, but to elevate Insert Mode — making it ideal for lightweight, quick and (perhaps not-so) dirty edits without ever leaving it.
 
+<img src="media/lovethesekeys.jpg" alt="Love these keys..." width="300"/>
 ## Why this approach?
 
 - Normal Mode is where Vim shines — efficient, modal, powerful. Overloading it with arrow keys or modern behavior is a waste of potential. Insert Mode, in contrast, is underpowered — users are often forced to exit it just to perform basic actions.
