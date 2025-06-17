@@ -29,7 +29,7 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode — making it 
 - **Text selection** using `Shift` + `Arrow Keys`.
 - When a selection is active, **typing replaces the selection** — without modifying Vim registers.
 - **Fast cursor movement** with `Ctrl` + `←` and `→` (similar to Vim's `b` and `e` but enhanced) Note: it relies on what set in `vim.opt.iskeyword`.
-- **Jump between paragraphs** with `Ctrl` + `↓` and `↑` (same as vim's `{` and `}`)
+- **Jump between paragraphs** with `Ctrl` + `↓` and `↑` (same as vim's `{` and `}`).
 - **Word-wise selection** with `Ctrl` + `Shift` + `Arrow Keys`.
 - Full support for `Home`, `End`, `Page Up`, and `Page Down`.
   `Ctrl` + `Home` jumps to the beginning of the file, `Ctrl` + `End` to the end.
@@ -41,7 +41,7 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode — making it 
 - **Move lines up/down** with `Alt + ↑ / ↓`. Works on single or multiple selected lines.
 - While selecting one or more lines, use `Tab` and `Shift` + `Tab` to **indent or dedent**.
 - `Ctrl` + `a` for select all.
-- `Insert` key allows to switch between Select and Visual mode.
+- `Insert` key allows to quickly switch between Select and Visual mode.
 
 ## Installation and Config
 
@@ -66,6 +66,6 @@ Configuration:
 ## Roadmap
 
 - `:help` Vim documentation – provide Vim help file (:help rambo) for discoverability
-- Plugin custom configuration – allow users to customize key mappings and behavior via `setup({ ... })`
-- Unicode support – extend compatibility beyond ASCII for smooth editing in international contexts
-- Simple multicursor support – implement basic multicursor editing for repetitive text changes
+- Plugin custom configuration – allow users to customize some key mappings and behavior via `setup({ ... })`
+- Unicode support – extend compatibility beyond ASCII for smooth editing also in international contexts.
+- Simple multicursor support – implement basic but handy multicursor editing.
