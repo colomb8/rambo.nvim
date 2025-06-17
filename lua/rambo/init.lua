@@ -1,9 +1,13 @@
 ------------------------------------------------------------------------------
 --[[
 
+Rambo.nvim
+
 Author: Dario Colombotto
   email: dario.colombotto@outlook.com
   Telegram: https://t.me/colomb8
+
+License: MIT (see LICENSE)
 
 --]]
 ------------------------------------------------------------------------------

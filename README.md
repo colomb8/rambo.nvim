@@ -72,3 +72,7 @@ Configuration:
 - Plugin custom configuration – allow users to customize some key mappings and behavior via `setup({ ... })`
 - Unicode support – extend compatibility beyond ASCII for smooth editing also in international contexts.
 - Simple multicursor support – implement basic but handy multicursor editing.
+
+## License
+
+[MIT](LICENSE)
