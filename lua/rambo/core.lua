@@ -1023,7 +1023,7 @@ function M.setup(cfg)
   end)
 
   -- Switch Select to Select Line
-  vim.keymap.set('s', '<C-l>', function()
+  vim.keymap.set('s', '<' .. cfg.operations_key .. '-l>', function()
     if insert_special then
       sendKeys('<C-g>V<C-g>', 'n')
     else
