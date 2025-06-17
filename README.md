@@ -37,7 +37,7 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode — making it 
 - **Wrapping utilities**: after selecting text, press `)` to wrap it in parentheses — **selection remains active**, allowing for rapid combined operations.
 - **Search navigation** with `F3` and `F2` (or `Shift-F3`). Press `F4` to exit highlight mode (if enabled).
 - `Ctrl + F` opens the search prompt. If text is selected, it is used as the search query. (*)
-- **Undo/Redo** with `Ctrl + Z` and `Ctrl + Y`. Note 1: it's reccomanded to set undo breakpoints in insert mode for a better experience. (*)
+- **Undo/Redo** with `Ctrl + Z` and `Ctrl + Y`. Note: it's reccomanded to set undo breakpoints in insert mode for a better experience. (*)
 - **Move lines up/down** with `Alt + ↑ / ↓`. Works on single or multiple selected lines.
 - While selecting one or more lines, use `Tab` and `Shift` + `Tab` to **indent or dedent**.
 - `Ctrl` + `a` for select all. (*)
