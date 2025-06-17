@@ -53,7 +53,8 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
   config = function()
     require("rambo").setup()
   end,
-}```
+}
+```
 >setup() is optional — call it only if you want to override defaults.
 
 

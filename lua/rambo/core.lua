@@ -299,11 +299,13 @@ M.cfg = {
 
 function M.setup(user_opts)
   M.cfg = vim.tbl_deep_extend("force", M.cfg, user_opts or {})
+
+  assert(
+    vim.list_contains({'C', 'M'}, M.cfg.operations_key),
+    'operation_key supports only "C" and "M"; received ' .. M.cfg.operations_key)
+
 end
 
-assert(
-  vim.list_contains({'C', 'M'}, M.cfg.operations_key),
-  'operation_key supports only "C" and "M"; received ' .. M.cfg.operations_key)
 
 ------------------------------------------------------------------------------
 -- Rambo.nvim Autocommands
@@ -927,40 +929,40 @@ end,
 -- Operations ----------------------------------------------------------------
 
 -- Select mode: Copy to { ", rambo_register_lines }
-vim.keymap.set('s', '<' .. operations_key .. '-c>', rmbCopy)
+vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-c>', rmbCopy)
 
 -- Select mode: Cut to { ", rambo_register_lines }
-vim.keymap.set('s', '<' .. operations_key .. '-x>', rmbCut)
+vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-x>', rmbCut)
 
 -- Select mode: Paste from rambo_register_lines
-vim.keymap.set('s', '<' .. operations_key .. '-v>', function() rmbPaste('select') end)
+vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-v>', function() rmbPaste('select') end)
 
 -- Insert mode: Copy -> No Op.
-vim.keymap.set('i', '<' .. operations_key .. '-c>', '<NOP>')
+vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-c>', '<NOP>')
 
 -- Insert mode: Cut -> No Op.
-vim.keymap.set('i', '<' .. operations_key .. '-x>', '<NOP>')
+vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-x>', '<NOP>')
 
 -- Insert mode: Paste from rambo_register_lines
-vim.keymap.set('i', '<' .. operations_key .. '-v>', function() rmbPaste('insert') end)
+vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-v>', function() rmbPaste('insert') end)
 
 -- Undo/Redo in Insert/Select
-vim.keymap.set('i', '<' .. operations_key .. '-z>', '<C-o>u')
-vim.keymap.set('s', '<' .. operations_key .. '-z>', '<ESC>ui')
--- vim.keymap.set('i', '<' .. operations_key .. '-Z>', '<C-o><C-r>') -- ko w C-
--- vim.keymap.set('s', '<' .. operations_key .. '-Z>', '<ESC><C-r>i') -- ko w C-
-vim.keymap.set('i', '<' .. operations_key .. '-y>', '<C-o><C-r>')
-vim.keymap.set('s', '<' .. operations_key .. '-y>', '<ESC><C-r>i')
+vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-z>', '<C-o>u')
+vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-z>', '<ESC>ui')
+-- vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-Z>', '<C-o><C-r>') -- ko w C-
+-- vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-Z>', '<ESC><C-r>i') -- ko w C-
+vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-y>', '<C-o><C-r>')
+vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-y>', '<ESC><C-r>i')
 
 -- Select all
-vim.keymap.set('i', '<' .. operations_key .. '-a>', function()
+vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-a>', function()
   rmbMotionCHome()
   sendKeys('<C-o>v<C-g>', 'n')
   vim.schedule(function() rmbMotionCEnd() end)
 end)
 
 -- Search in Insert mode
-vim.keymap.set('i', '<' .. operations_key .. '-f>', '<C-o>/')
+vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-f>', '<C-o>/')
 
 -- F3 / F4 and S-F3 for jump between search results
 -- vim.keymap.set({'i', 's'}, '<F3>',  '<C-o>n')
@@ -999,7 +1001,7 @@ end)
 vim.keymap.set({'i', 's'}, '<F4>',  '<cmd>:nohl<CR>')
 
 -- Search text under Selection
-vim.keymap.set('s', '<' .. operations_key .. '-f>', function()
+vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-f>', function()
   sendKeys('<C-g>', 'n')
   vim.schedule(function() sendKeys('*', 'n') end)
 end)
@@ -1041,6 +1043,10 @@ for _, cfg in pairs({
   {'<', '< ', ' >'}, {'>', '<', '>'},
   {'"', '"', '"'},
   {"'", "'", "'"},
+  {"`", "`", "`"},
+  -- commented becomes repeating it manually is better
+  -- {'"""', '"""', '"""'},
+  -- {"```", "```", "```"},
   }) do
   local key, op, cl = cfg[1], cfg[2], cfg[3]
   --
