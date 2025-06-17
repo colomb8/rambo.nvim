@@ -287,25 +287,7 @@ local insert_special = false
 
 local selection_original_value = vim.o.selection
 
--- local operations_key = 'C'
-
--- Custom settings
-
 local M = {}
-
-M.cfg = {
-  operations_key = 'C',
-}
-
-function M.setup(user_opts)
-  M.cfg = vim.tbl_deep_extend("force", M.cfg, user_opts or {})
-
-  assert(
-    vim.list_contains({'C', 'M'}, M.cfg.operations_key),
-    'operation_key supports only "C" and "M"; received ' .. M.cfg.operations_key)
-
-end
-
 
 ------------------------------------------------------------------------------
 -- Rambo.nvim Autocommands
@@ -773,341 +755,357 @@ end
 -- Rambo.nvim Keybindings
 ------------------------------------------------------------------------------
 
--- Moving in Insert ----------------------------------------------------------
+function M.setup(cfg)
 
-for k, f in pairs({
-  ['<LEFT>'] = rmbMotionLeft,
-  ['<RIGHT>'] = rmbMotionRight,
-  ['<UP>'] = rmbMotionUp,
-  ['<DOWN>'] = rmbMotionDown,
-  ['<C-LEFT>'] = rmbMotionCLeft,
-  ['<C-RIGHT>'] = rmbMotionCRight,
-  ['<C-UP>'] = rmbMotionCUp,
-  ['<C-DOWN>'] = rmbMotionCDown,
-  ['<HOME>'] = rmbMotionHome,
-  ['<END>'] = rmbMotionEnd,
-  ['<C-HOME>'] = rmbMotionCHome,
-  ['<C-END>'] = rmbMotionCEnd,
-  ['<PAGEUP>'] = rmbMotionPageUp,
-  ['<PAGEDOWN>'] = rmbMotionPageDown,
-  }) do
-  vim.keymap.set('i', k, f)
-end
+  -- Cfg validation ------------------------------------------------------------
+  for k, _ in pairs(cfg) do
+    assert(vim.list_contains({
+      'operations_key',
+    }, k), 'unknown configuration name: ' .. k)
+  end
 
--- Start Select-in-Insert mode -----------------------------------------------
+  assert(
+    vim.list_contains({'C', 'M'}, cfg.operations_key),
+    '`operations_key` supports only "C" or "M"; received ' .. cfg.operations_key)
 
-for k, f in pairs({
-  ['<S-LEFT>'] = rmbMotionLeft,
-  ['<S-UP>'] = rmbMotionUp,
-  ['<C-S-LEFT>'] = rmbMotionCLeft,
-  ['<C-S-UP>'] = rmbMotionCUp,
-  -- ['<S-HOME>'] = rmbMotionHome,
-  ['<C-S-HOME>'] = rmbMotionCHome,
-  ['<S-PAGEUP>'] = rmbMotionPageUp,
-  }) do
-           --
-  vim.keymap.set('i', k, function()
-    if vim.fn.col('.') == 1 and vim.fn.line('.') == 1 -- BOF
+
+  -- Moving in Insert ----------------------------------------------------------
+
+  for k, f in pairs({
+    ['<LEFT>'] = rmbMotionLeft,
+    ['<RIGHT>'] = rmbMotionRight,
+    ['<UP>'] = rmbMotionUp,
+    ['<DOWN>'] = rmbMotionDown,
+    ['<C-LEFT>'] = rmbMotionCLeft,
+    ['<C-RIGHT>'] = rmbMotionCRight,
+    ['<C-UP>'] = rmbMotionCUp,
+    ['<C-DOWN>'] = rmbMotionCDown,
+    ['<HOME>'] = rmbMotionHome,
+    ['<END>'] = rmbMotionEnd,
+    ['<C-HOME>'] = rmbMotionCHome,
+    ['<C-END>'] = rmbMotionCEnd,
+    ['<PAGEUP>'] = rmbMotionPageUp,
+    ['<PAGEDOWN>'] = rmbMotionPageDown,
+    }) do
+    vim.keymap.set('i', k, f)
+  end
+
+  -- Start Select-in-Insert mode -----------------------------------------------
+
+  for k, f in pairs({
+    ['<S-LEFT>'] = rmbMotionLeft,
+    ['<S-UP>'] = rmbMotionUp,
+    ['<C-S-LEFT>'] = rmbMotionCLeft,
+    ['<C-S-UP>'] = rmbMotionCUp,
+    -- ['<S-HOME>'] = rmbMotionHome,
+    ['<C-S-HOME>'] = rmbMotionCHome,
+    ['<S-PAGEUP>'] = rmbMotionPageUp,
+    }) do
+             --
+    vim.keymap.set('i', k, function()
+      if vim.fn.col('.') == 1 and vim.fn.line('.') == 1 -- BOF
+        then return end
+      sendKeys('<C-\\><C-o>v<C-g>', 'n')
+      vim.schedule(f)
+    end)
+  end
+
+  vim.keymap.set('i', '<S-HOME>', function()
+    if vim.fn.col('.') == 1 then return end
+    sendKeys('<C-\\><C-o>v<C-g>', 'n')
+    vim.schedule(rmbMotionHome)
+  end)
+
+  for k, f in pairs({
+    ['<S-RIGHT>'] = rmbMotionRight,
+    ['<S-DOWN>'] = rmbMotionDown,
+    ['<C-S-RIGHT>'] = rmbMotionCRight,
+    ['<C-S-DOWN>'] = rmbMotionCDown,
+    -- ['<S-END>'] = rmbMotionEnd,
+    ['<C-S-END>'] = rmbMotionCEnd,
+    ['<S-PAGEDOWN>'] = rmbMotionPageDown,
+    }) do
+    --
+    vim.keymap.set('i', k, function()
+      if vim.fn.col('.') == vim.fn.col('$')
+        and vim.fn.line('.') == vim.fn.line('$') -- EOF
       then return end
+      sendKeys('<C-\\><C-o>v<C-g>', 'n')
+      vim.schedule(f)
+    end)
+  end
+
+  vim.keymap.set('i', '<S-END>', function()
+    if vim.fn.col('.') == vim.fn.getline('.'):len() + 1 then return end
     sendKeys('<C-\\><C-o>v<C-g>', 'n')
-    vim.schedule(f)
+    vim.schedule(rmbMotionEnd)
   end)
-end
 
-vim.keymap.set('i', '<S-HOME>', function()
-  if vim.fn.col('.') == 1 then return end
-  sendKeys('<C-\\><C-o>v<C-g>', 'n')
-  vim.schedule(rmbMotionHome)
-end)
+  -- Changing selection --------------------------------------------------------
 
-for k, f in pairs({
-  ['<S-RIGHT>'] = rmbMotionRight,
-  ['<S-DOWN>'] = rmbMotionDown,
-  ['<C-S-RIGHT>'] = rmbMotionCRight,
-  ['<C-S-DOWN>'] = rmbMotionCDown,
-  -- ['<S-END>'] = rmbMotionEnd,
-  ['<C-S-END>'] = rmbMotionCEnd,
-  ['<S-PAGEDOWN>'] = rmbMotionPageDown,
-  }) do
-  --
-  vim.keymap.set('i', k, function()
-    if vim.fn.col('.') == vim.fn.col('$')
-      and vim.fn.line('.') == vim.fn.line('$') -- EOF
-    then return end
-    sendKeys('<C-\\><C-o>v<C-g>', 'n')
-    vim.schedule(f)
-  end)
-end
-
-vim.keymap.set('i', '<S-END>', function()
-  if vim.fn.col('.') == vim.fn.getline('.'):len() + 1 then return end
-  sendKeys('<C-\\><C-o>v<C-g>', 'n')
-  vim.schedule(rmbMotionEnd)
-end)
-
--- Changing selection --------------------------------------------------------
-
-for k, f in pairs({
-  ['<S-LEFT>'] = rmbMotionLeft,
-  ['<S-RIGHT>'] = rmbMotionRight,
-  ['<S-UP>'] = rmbMotionUp,
-  ['<S-DOWN>'] = rmbMotionDown,
-  ['<C-S-LEFT>'] = rmbMotionCLeft,
-  ['<C-S-RIGHT>'] = rmbMotionCRight,
-  ['<C-S-UP>'] = rmbMotionCUp,
-  ['<C-S-DOWN>'] = rmbMotionCDown,
-  ['<S-HOME>'] = rmbMotionHome,
-  ['<S-END>'] = rmbMotionEnd,
-  ['<C-S-HOME>'] = rmbMotionCHome,
-  ['<C-S-END>'] = rmbMotionCEnd,
-  ['<S-PAGEUP>'] = rmbMotionPageUp,
-  ['<S-PAGEDOWN>'] = rmbMotionPageDown,
-  }) do
-  vim.keymap.set('s', k, f)
-end
-
--- Stop Select-in-Insert mode ------------------------------------------------
-
-vim.keymap.set('s', '<LEFT>', rmbLeaveSelectLeft)
-vim.keymap.set('s', '<RIGHT>', rmbLeaveSelectRight)
-for k, f in pairs({
-  ['<UP>'] = rmbMotionUp,
-  ['<DOWN>'] = rmbMotionDown,
-  ['<C-LEFT>'] = rmbMotionCLeft,
-  ['<C-RIGHT>'] = rmbMotionCRight,
-  ['<C-UP>'] = rmbMotionCUp,
-  ['<C-DOWN>'] = rmbMotionCDown,
-  ['<HOME>'] = rmbMotionHome,
-  ['<END>'] = rmbMotionEnd,
-  ['<C-HOME>'] = rmbMotionCHome,
-  ['<C-END>'] = rmbMotionCEnd,
-  ['<PAGEUP>'] = rmbMotionPageUp,
-  ['<PAGEDOWN>'] = rmbMotionPageDown,
-  }) do
-  vim.keymap.set('s', k, function()
-    sendKeys('<ESC>', 'n')
-    vim.schedule(f)
-  end)
-end
-
--- rmbMove Lines in Insert ---------------------------------------------------
-
-vim.keymap.set('i', '<M-UP>', rmbMoveLineUp)
-vim.keymap.set('i', '<M-DOWN>', rmbMoveLineDown)
-vim.keymap.set('s', '<M-UP>', rmbMoveLinesUp)
-vim.keymap.set('s', '<M-DOWN>', rmbMoveLinesDown)
-
-
--- Tab for indent in Select mode ---------------------------------------------
-
-vim.keymap.set('s', '<TAB>', function()
-  local mode = vim.fn.mode()
-  if mode == 's' or mode == '\19' -- Select or Select-block (^S)
-    then
-    return '<C-g>V>gv<C-g>'
-  elseif vim.fn.mode() == 'S' then
-    return '<C-g>>gv<C-g>'
-  else
-    error(mode)
+  for k, f in pairs({
+    ['<S-LEFT>'] = rmbMotionLeft,
+    ['<S-RIGHT>'] = rmbMotionRight,
+    ['<S-UP>'] = rmbMotionUp,
+    ['<S-DOWN>'] = rmbMotionDown,
+    ['<C-S-LEFT>'] = rmbMotionCLeft,
+    ['<C-S-RIGHT>'] = rmbMotionCRight,
+    ['<C-S-UP>'] = rmbMotionCUp,
+    ['<C-S-DOWN>'] = rmbMotionCDown,
+    ['<S-HOME>'] = rmbMotionHome,
+    ['<S-END>'] = rmbMotionEnd,
+    ['<C-S-HOME>'] = rmbMotionCHome,
+    ['<C-S-END>'] = rmbMotionCEnd,
+    ['<S-PAGEUP>'] = rmbMotionPageUp,
+    ['<S-PAGEDOWN>'] = rmbMotionPageDown,
+    }) do
+    vim.keymap.set('s', k, f)
   end
-end,
-{ expr = true, desc = 'Indent' })
 
-vim.keymap.set('s', '<S-TAB>', function()
-  local mode = vim.fn.mode()
-  if mode == 's' or mode == '\19' -- Select or Select-block (^S)
-    then
-    return '<C-g>V<gv<C-g>'
-  elseif vim.fn.mode() == 'S' then
-    return '<C-g><gv<C-g>'
-  else
-    error(mode)
+  -- Stop Select-in-Insert mode ------------------------------------------------
+
+  vim.keymap.set('s', '<LEFT>', rmbLeaveSelectLeft)
+  vim.keymap.set('s', '<RIGHT>', rmbLeaveSelectRight)
+  for k, f in pairs({
+    ['<UP>'] = rmbMotionUp,
+    ['<DOWN>'] = rmbMotionDown,
+    ['<C-LEFT>'] = rmbMotionCLeft,
+    ['<C-RIGHT>'] = rmbMotionCRight,
+    ['<C-UP>'] = rmbMotionCUp,
+    ['<C-DOWN>'] = rmbMotionCDown,
+    ['<HOME>'] = rmbMotionHome,
+    ['<END>'] = rmbMotionEnd,
+    ['<C-HOME>'] = rmbMotionCHome,
+    ['<C-END>'] = rmbMotionCEnd,
+    ['<PAGEUP>'] = rmbMotionPageUp,
+    ['<PAGEDOWN>'] = rmbMotionPageDown,
+    }) do
+    vim.keymap.set('s', k, function()
+      sendKeys('<ESC>', 'n')
+      vim.schedule(f)
+    end)
   end
-end,
-{ expr = true, desc = 'Dedent' })
 
--- Operations ----------------------------------------------------------------
+  -- rmbMove Lines in Insert ---------------------------------------------------
 
--- Select mode: Copy to { ", rambo_register_lines }
-vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-c>', rmbCopy)
+  vim.keymap.set('i', '<M-UP>', rmbMoveLineUp)
+  vim.keymap.set('i', '<M-DOWN>', rmbMoveLineDown)
+  vim.keymap.set('s', '<M-UP>', rmbMoveLinesUp)
+  vim.keymap.set('s', '<M-DOWN>', rmbMoveLinesDown)
 
--- Select mode: Cut to { ", rambo_register_lines }
-vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-x>', rmbCut)
 
--- Select mode: Paste from rambo_register_lines
-vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-v>', function() rmbPaste('select') end)
+  -- Tab for indent in Select mode ---------------------------------------------
 
--- Insert mode: Copy -> No Op.
-vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-c>', '<NOP>')
+  vim.keymap.set('s', '<TAB>', function()
+    local mode = vim.fn.mode()
+    if mode == 's' or mode == '\19' -- Select or Select-block (^S)
+      then
+      return '<C-g>V>gv<C-g>'
+    elseif vim.fn.mode() == 'S' then
+      return '<C-g>>gv<C-g>'
+    else
+      error(mode)
+    end
+  end,
+  { expr = true, desc = 'Indent' })
 
--- Insert mode: Cut -> No Op.
-vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-x>', '<NOP>')
+  vim.keymap.set('s', '<S-TAB>', function()
+    local mode = vim.fn.mode()
+    if mode == 's' or mode == '\19' -- Select or Select-block (^S)
+      then
+      return '<C-g>V<gv<C-g>'
+    elseif vim.fn.mode() == 'S' then
+      return '<C-g><gv<C-g>'
+    else
+      error(mode)
+    end
+  end,
+  { expr = true, desc = 'Dedent' })
 
--- Insert mode: Paste from rambo_register_lines
-vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-v>', function() rmbPaste('insert') end)
+  -- Operations ----------------------------------------------------------------
 
--- Undo/Redo in Insert/Select
-vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-z>', '<C-o>u')
-vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-z>', '<ESC>ui')
--- vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-Z>', '<C-o><C-r>') -- ko w C-
--- vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-Z>', '<ESC><C-r>i') -- ko w C-
-vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-y>', '<C-o><C-r>')
-vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-y>', '<ESC><C-r>i')
+  -- Select mode: Copy to { ", rambo_register_lines }
+  vim.keymap.set('s', '<' .. cfg.operations_key .. '-c>', rmbCopy)
 
--- Select all
-vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-a>', function()
-  rmbMotionCHome()
-  sendKeys('<C-o>v<C-g>', 'n')
-  vim.schedule(function() rmbMotionCEnd() end)
-end)
+  -- Select mode: Cut to { ", rambo_register_lines }
+  vim.keymap.set('s', '<' .. cfg.operations_key .. '-x>', rmbCut)
 
--- Search in Insert mode
-vim.keymap.set('i', '<' .. M.cfg.operations_key .. '-f>', '<C-o>/')
+  -- Select mode: Paste from rambo_register_lines
+  vim.keymap.set('s', '<' .. cfg.operations_key .. '-v>', function() rmbPaste('select') end)
 
--- F3 / F4 and S-F3 for jump between search results
--- vim.keymap.set({'i', 's'}, '<F3>',  '<C-o>n')
--- vim.keymap.set({'i', 's'}, '<F15>', '<C-o>N') -- = S-<F3>
--- vim.keymap.set({'i', 's'}, '<F2>', '<C-o>N') -- = S-<F3>
+  -- Insert mode: Copy -> No Op.
+  vim.keymap.set('i', '<' .. cfg.operations_key .. '-c>', '<NOP>')
 
--- Insert: search forward
-vim.keymap.set('i', '<F3>', function()
-  sendKeys('<C-o>gn<C-g>', 'n')
-end)
+  -- Insert mode: Cut -> No Op.
+  vim.keymap.set('i', '<' .. cfg.operations_key .. '-x>', '<NOP>')
 
--- Insert: search backward
-vim.keymap.set('i', '<F15>', function()
-  sendKeys('<C-o>gN<C-g>', 'n')
-end)
-vim.keymap.set('i', '<F2>', function()
-  sendKeys('<C-o>gN<C-g>', 'n')
-end)
+  -- Insert mode: Paste from rambo_register_lines
+  vim.keymap.set('i', '<' .. cfg.operations_key .. '-v>', function() rmbPaste('insert') end)
 
--- Select: search forward
-vim.keymap.set('s', '<F3>', function()
-  sendKeys('<ESC><C-\\><C-o>gn<C-g>', 'nx')
-end)
+  -- Undo/Redo in Insert/Select
+  vim.keymap.set('i', '<' .. cfg.operations_key .. '-z>', '<C-o>u')
+  vim.keymap.set('s', '<' .. cfg.operations_key .. '-z>', '<ESC>ui')
+  -- vim.keymap.set('i', '<' .. cfg.operations_key .. '-Z>', '<C-o><C-r>') -- ko w C-
+  -- vim.keymap.set('s', '<' .. cfg.operations_key .. '-Z>', '<ESC><C-r>i') -- ko w C-
+  vim.keymap.set('i', '<' .. cfg.operations_key .. '-y>', '<C-o><C-r>')
+  vim.keymap.set('s', '<' .. cfg.operations_key .. '-y>', '<ESC><C-r>i')
 
--- Select: search backward
-vim.keymap.set('s', '<F15>', function()
-  rmbMotionLeft()
-  sendKeys('<ESC><C-\\><C-o>gN<C-g>', 'nx')
-end)
-vim.keymap.set('s', '<F2>', function()
-  rmbMotionLeft()
-  sendKeys('<ESC><C-\\><C-o>gN<C-g>', 'nx')
-end)
+  -- Select all
+  vim.keymap.set('i', '<' .. cfg.operations_key .. '-a>', function()
+    rmbMotionCHome()
+    sendKeys('<C-o>v<C-g>', 'n')
+    vim.schedule(function() rmbMotionCEnd() end)
+  end)
 
--- Disable hlsearch
-vim.keymap.set({'i', 's'}, '<F4>',  '<cmd>:nohl<CR>')
+  -- Search in Insert mode
+  vim.keymap.set('i', '<' .. cfg.operations_key .. '-f>', '<C-o>/')
 
--- Search text under Selection
-vim.keymap.set('s', '<' .. M.cfg.operations_key .. '-f>', function()
-  sendKeys('<C-g>', 'n')
-  vim.schedule(function() sendKeys('*', 'n') end)
-end)
+  -- F3 / F4 and S-F3 for jump between search results
+  -- vim.keymap.set({'i', 's'}, '<F3>',  '<C-o>n')
+  -- vim.keymap.set({'i', 's'}, '<F15>', '<C-o>N') -- = S-<F3>
+  -- vim.keymap.set({'i', 's'}, '<F2>', '<C-o>N') -- = S-<F3>
 
--- Del/BS in Select (blackhole reg)
-vim.keymap.set('s', '<DEL>', '<C-g>"_c' )
-vim.keymap.set('s', '<BS>', '<C-g>"_c' )
+  -- Insert: search forward
+  vim.keymap.set('i', '<F3>', function()
+    sendKeys('<C-o>gn<C-g>', 'n')
+  end)
 
--- Cycle between ins-special-Visual and ins-special-Select modes
-vim.keymap.set('x', '<INSERT>', function()
-  if insert_special then
+  -- Insert: search backward
+  vim.keymap.set('i', '<F15>', function()
+    sendKeys('<C-o>gN<C-g>', 'n')
+  end)
+  vim.keymap.set('i', '<F2>', function()
+    sendKeys('<C-o>gN<C-g>', 'n')
+  end)
+
+  -- Select: search forward
+  vim.keymap.set('s', '<F3>', function()
+    sendKeys('<ESC><C-\\><C-o>gn<C-g>', 'nx')
+  end)
+
+  -- Select: search backward
+  vim.keymap.set('s', '<F15>', function()
+    rmbMotionLeft()
+    sendKeys('<ESC><C-\\><C-o>gN<C-g>', 'nx')
+  end)
+  vim.keymap.set('s', '<F2>', function()
+    rmbMotionLeft()
+    sendKeys('<ESC><C-\\><C-o>gN<C-g>', 'nx')
+  end)
+
+  -- Disable hlsearch
+  vim.keymap.set({'i', 's'}, '<F4>',  '<cmd>:nohl<CR>')
+
+  -- Search text under Selection
+  vim.keymap.set('s', '<' .. cfg.operations_key .. '-f>', function()
     sendKeys('<C-g>', 'n')
-  else
-    sendKeys('<INSERT>', 'n')
-  end
-end)
-vim.keymap.set('s', '<INSERT>', function()
-  if insert_special then
-    sendKeys('<C-g>', 'n')
-  else
-    sendKeys('<INSERT>', 'n')
-  end
-end)
-
--- Switch Select to Select Line
-vim.keymap.set('s', '<C-l>', function()
-  if insert_special then
-    sendKeys('<C-g>V<C-g>', 'n')
-  else
-    sendKeys('<C-l>', 'n')
-  end
-end)
-
--- Wrapping utilities: (), [], {}, "", '', <>
-for _, cfg in pairs({
-  {'(', '( ', ' )'}, {')', '(', ')'},
-  {'[', '[ ', ' ]'}, {']', '[', ']'},
-  {'{', '{ ', ' }'}, {'}', '{', '}'},
-  {'<', '< ', ' >'}, {'>', '<', '>'},
-  {'"', '"', '"'},
-  {"'", "'", "'"},
-  {"`", "`", "`"},
-  -- commented becomes repeating it manually is better
-  -- {'"""', '"""', '"""'},
-  -- {"```", "```", "```"},
-  }) do
-  local key, op, cl = cfg[1], cfg[2], cfg[3]
-  --
-  vim.keymap.set('s', key, function()
-    local r1, c1, r2, c2, dir = getSelectionBoundsAndDirection()
-    local len_l = op:len()
-    sendKeys('<ESC>', 'n')
-    insertText(r2, c2 + 1, {cl})
-    insertText(r1, c1, {op})
-    setSelect(
-      r1,
-      c1 + len_l,
-      r2,
-      c2 + (r1 == r2 and len_l or 0),
-      dir)
+    vim.schedule(function() sendKeys('*', 'n') end)
   end)
+
+  -- Del/BS in Select (blackhole reg)
+  vim.keymap.set('s', '<DEL>', '<C-g>"_c' )
+  vim.keymap.set('s', '<BS>', '<C-g>"_c' )
+
+  -- Cycle between ins-special-Visual and ins-special-Select modes
+  vim.keymap.set('x', '<INSERT>', function()
+    if insert_special then
+      sendKeys('<C-g>', 'n')
+    else
+      sendKeys('<INSERT>', 'n')
+    end
+  end)
+  vim.keymap.set('s', '<INSERT>', function()
+    if insert_special then
+      sendKeys('<C-g>', 'n')
+    else
+      sendKeys('<INSERT>', 'n')
+    end
+  end)
+
+  -- Switch Select to Select Line
+  vim.keymap.set('s', '<C-l>', function()
+    if insert_special then
+      sendKeys('<C-g>V<C-g>', 'n')
+    else
+      sendKeys('<C-l>', 'n')
+    end
+  end)
+
+  -- Wrapping utilities: (), [], {}, "", '', <>
+  for _, cfg in pairs({
+    {'(', '( ', ' )'}, {')', '(', ')'},
+    {'[', '[ ', ' ]'}, {']', '[', ']'},
+    {'{', '{ ', ' }'}, {'}', '{', '}'},
+    {'<', '< ', ' >'}, {'>', '<', '>'},
+    {'"', '"', '"'},
+    {"'", "'", "'"},
+    {"`", "`", "`"},
+    -- commented becomes repeating it manually is better
+    -- {'"""', '"""', '"""'},
+    -- {"```", "```", "```"},
+    }) do
+    local key, op, cl = cfg[1], cfg[2], cfg[3]
+    --
+    vim.keymap.set('s', key, function()
+      local r1, c1, r2, c2, dir = getSelectionBoundsAndDirection()
+      local len_l = op:len()
+      sendKeys('<ESC>', 'n')
+      insertText(r2, c2 + 1, {cl})
+      insertText(r1, c1, {op})
+      setSelect(
+        r1,
+        c1 + len_l,
+        r2,
+        c2 + (r1 == r2 and len_l or 0),
+        dir)
+    end)
+  end
+
+  ------------------------------------------------------------------------------
+  -- Scratch / Notes
+  ------------------------------------------------------------------------------
+
+  --[[
+
+
+  1) function getSelectionRawBounds()
+    - dep: none
+    - returns: r1, c1, r2, c2
+    - assert: we are in visual/select mode
+    - Inclusive/Esclusive Logic: NO
+
+  2) function normalizeBoundsGetDirection(r1, c1, r2, c2)
+    - dep: none
+    - returns: r1, c1, r2, c2, dir
+    - assert: none
+    - Inclusive/Esclusive Logic: YES
+
+  3) function getSelectionBoundsAndDirection()
+    - dep: 1, 2
+    - returns: r1, c1, r2, c2, dir
+    - assert: none
+    - Inclusive/Esclusive Logic: NO
+
+  4) function getTextFromBounds(r1, c1, r2, c2)
+    - dep: none
+    - returns: {lines}
+    - assert: none
+    - Inclusive/Esclusive Logic: NO
+
+  5) function getSelectionText()
+    - dep: 3, 4
+    - returns: {lines}
+    - assert: we are in visual/select mode, no block
+    - Inclusive/Esclusive Logic: NO
+
+  6) function rmbCopy()
+    - dep: 5
+    - returns: none
+    - assert: none
+    - Inclusive/Esclusive Logic: NO
+
+  --]]
+
 end
-
-------------------------------------------------------------------------------
--- Scratch / Notes
-------------------------------------------------------------------------------
-
---[[
-
-
-1) function getSelectionRawBounds()
-  - dep: none
-  - returns: r1, c1, r2, c2
-  - assert: we are in visual/select mode
-  - Inclusive/Esclusive Logic: NO
-
-2) function normalizeBoundsGetDirection(r1, c1, r2, c2)
-  - dep: none
-  - returns: r1, c1, r2, c2, dir
-  - assert: none
-  - Inclusive/Esclusive Logic: YES
-
-3) function getSelectionBoundsAndDirection()
-  - dep: 1, 2
-  - returns: r1, c1, r2, c2, dir
-  - assert: none
-  - Inclusive/Esclusive Logic: NO
-
-4) function getTextFromBounds(r1, c1, r2, c2)
-  - dep: none
-  - returns: {lines}
-  - assert: none
-  - Inclusive/Esclusive Logic: NO
-
-5) function getSelectionText()
-  - dep: 3, 4
-  - returns: {lines}
-  - assert: we are in visual/select mode, no block
-  - Inclusive/Esclusive Logic: NO
-
-6) function rmbCopy()
-  - dep: 5
-  - returns: none
-  - assert: none
-  - Inclusive/Esclusive Logic: NO
-
---]]
 
 return M

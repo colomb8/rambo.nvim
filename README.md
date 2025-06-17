@@ -33,7 +33,7 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode — making it 
 - **Word-wise selection** with `Ctrl` + `Shift` + `Arrow Keys`.
 - Full support for `Home`, `End`, `Page Up`, and `Page Down`.
   `Ctrl` + `Home` jumps to the beginning of the file, `Ctrl` + `End` to the end.
-- **Clipboard integration**: `Ctrl` + `C`, `Ctrl` + `V`, and `Ctrl` + `X` for copy, paste, and cut — fully compatible with the **system clipboard**.
+- **Copy/Cut/Paste op.**: `Ctrl` + `C`, `Ctrl` + `V`, and `Ctrl` + `X` for copy, paste, and cut — fully compatible with the **system clipboard**. Moreover, `Ctrl` can be replaced with `Meta (alt)` with a setting.
 - **Wrapping utilities**: after selecting text, press `)` to wrap it in parentheses — **selection remains active**, allowing for rapid combined operations.
 - **Search navigation** with `F2` and `F3`. Press `F4` to exit highlight mode (if enabled).
 - `Ctrl + F` opens the search prompt. If text is selected, it is used as the search query.
