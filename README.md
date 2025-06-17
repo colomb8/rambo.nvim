@@ -43,9 +43,7 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode — making it 
 - `Ctrl` + `a` for select all.
 - `Insert` key allows to switch between Select and Visual mode.
 
-## Installation
-
-## Installation
+## Installation and Config
 
 Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
 
@@ -53,11 +51,16 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
 {
   "colomb8/rambo.nvim",
   config = function()
-    require("rambo").setup()
+    require("rambo").setup({
+      -- operations_key = 'C', -- 'C' or 'M'
+    })
   end,
-}
+},
 ```
 >setup() is optional — call it only if you want to override defaults.
+
+Configuration:
+- 'C' for Ctrl or 'M' for Meta(Alt); it sets the key Copy/Cut/Paste/Search [...]; default is 'C'.
 
 
 ## Roadmap
