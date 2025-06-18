@@ -32,9 +32,9 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode — making it 
 - **Jump between paragraphs** with `Ctrl` + `↓` and `↑` (same as vim's `{` and `}`).
 - **Word-wise selection** with `Ctrl` + `Shift` + `Arrow Keys`.
 - Full support for `Home`, `End`, `Page Up`, and `Page Down`.
-  `Ctrl` + `Home` jumps to the beginning of the file, `Ctrl` + `End` to the end.
+  `Ctrl` + `Home` jumps to the beginning of the file, `Ctrl` + `End` to the end. Obviously, they can combined with `Shift` for Select mode.
 - **Copy/Cut/Paste op.**: `Ctrl` + `C`, `Ctrl` + `V`, and `Ctrl` + `X` for copy, paste, and cut — fully compatible with the **system clipboard**. (*)
-- **Wrapping utilities**: after selecting text, press e.g. `)` to wrap it in parentheses — **selection remains active**, allowing for rapid combined operations, i.e. `)` and then `"` does `('ciao')`.
+- **Wrapping utilities**: after selecting text, press e.g. `)` to wrap it in parentheses — **selection remains active**, allowing for rapid combined operations, i.e. `)` and then `"` does `("ciao")`.
 - **Search navigation** with `F3` and `F2` (or `Shift-F3`). Press `F4` to exit highlight mode (if enabled).
 - `Ctrl + F` opens the search prompt. If text is selected, it is used as the search query. (*)
 - **Undo/Redo** with `Ctrl + Z` and `Ctrl + Y`. Note: it's reccomanded to set undo breakpoints in insert mode for a better experience. (*)
@@ -68,8 +68,9 @@ Configuration:
 
 ## Roadmap
 
-- `:help` Vim documentation – provide Vim help file (:help rambo) for discoverability
-- Plugin custom configuration – allow users to customize some key mappings and behavior via `setup({ ... })`
+- `:help` Vim documentation – provide Vim help file (:help rambo) for discoverability.
+- In case of line wrap, Up/Down should follow virtual text (like gj and gk).
+- Plugin custom configuration – allow users to customize some key mappings and behavior via `setup({ ... })`.
 - Unicode support – extend compatibility beyond ASCII for smooth editing also in international contexts.
 - Simple multicursor support – implement basic but handy multicursor editing.
 

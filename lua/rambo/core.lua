@@ -986,19 +986,30 @@ function M.setup(cfg)
   vim.keymap.set('s', '<F3>', function()
     sendKeys('<ESC><C-\\><C-o>gn<C-g>', 'nx')
   end)
+  vim.keymap.set('n', '<F3>', function()
+    sendKeys('i<C-\\><C-o>gn<C-g>', 'nx')
+  end)
 
   -- Select: search backward
   vim.keymap.set('s', '<F15>', function()
     rmbMotionLeft()
     sendKeys('<ESC><C-\\><C-o>gN<C-g>', 'nx')
   end)
+  vim.keymap.set('n', '<F15>', function()
+    rmbMotionLeft()
+    sendKeys('i<C-\\><C-o>gN<C-g>', 'nx')
+  end)
   vim.keymap.set('s', '<F2>', function()
     rmbMotionLeft()
     sendKeys('<ESC><C-\\><C-o>gN<C-g>', 'nx')
   end)
+  vim.keymap.set('n', '<F2>', function()
+    rmbMotionLeft()
+    sendKeys('i<C-\\><C-o>gN<C-g>', 'nx')
+  end)
 
   -- Disable hlsearch
-  vim.keymap.set({'i', 's'}, '<F4>',  '<cmd>:nohl<CR>')
+  vim.keymap.set({'n', 'i', 's'}, '<F4>',  '<cmd>:nohl<CR>')
 
   -- Search text under Selection
   vim.keymap.set('s', '<' .. cfg.operations_key .. '-f>', function()
