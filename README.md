@@ -60,7 +60,7 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
   end,
 },
 ```
->setup() is optional — call it only if you want to override defaults.
+>setup() is required — call it without arguments to use the default behavior.
 
 Configuration:
 - `C` for `Ctrl` or `M` for `Meta (Alt)`; it sets the key for Copy/Cut/Paste, Undo/Redo, Search, Select All and convert Select to S-Line; default is `C`.
