@@ -63,7 +63,7 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
 >setup() is required - call it without arguments to use the default behavior.
 
 Configuration:
-- operations_key: `C` for `Ctrl` or `M` for `Meta (Alt)`. It sets the key for Copy/Cut/Paste, Undo/Redo, Search, Select All and convert Select to S-Line. Default is `C`.
+- `operations_key`: `C` for `Ctrl` or `M` for `Meta (Alt)`. It sets the key for Copy/Cut/Paste, Undo/Redo, Search, Select All and convert Select to S-Line. Default is `C`.
 
 
 ## Roadmap
