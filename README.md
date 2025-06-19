@@ -10,15 +10,15 @@ A Neovim plugin that supercharges Insert Mode with modern editing behavior.
 - **Normal Mode**: Stay true to Vim, maintain your Vim proficiency and benefit from its full power. Use `hjkl` and all of Vim's native keybindings.
 - **Insert Mode**: Becomes fluid, intuitive, and modern (like Sublime Text, Notepad++, or other contemporary editors). Use `← ↓ ↑ →` , `Ctrl` for jumps, `Shift` for selections, plus *motion helpers* like `Home`, `End`, `PageUp`, `PageDown`.
 
-The idea isn't to replace Normal Mode, but to elevate Insert Mode — making it ideal for lightweight, quick and (perhaps not-so) dirty edits without ever leaving it.
+The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it ideal for lightweight, quick and (perhaps not-so) dirty edits without ever leaving it.
 
 <p align="center"><img src="media/lovethesekeys.jpg" alt="Love these keys..." width="200"/></p>
 
 ## Why this approach?
 
-- Normal Mode is where Vim shines — efficient, modal, powerful. Overloading it with arrow keys or modern behavior is a waste of potential. Insert Mode, in contrast, is underpowered — users are often forced to exit it just to perform basic actions.
+- Normal Mode is where Vim shines - efficient, modal, powerful. Overloading it with arrow keys or modern behavior is a waste of potential. Insert Mode, in contrast, is underpowered - users are often forced to exit it just to perform basic actions.
 - For most non-vim users, selecting with `Shift` + motion is second nature. also the behavior of Select mode feel natural. Combined with the natural feel of Select Mode, this plugin offers a gentle bridge into Vim, making it more accessible to newcomers.
-- Friendly even for non-coding workflows — ideal for quick edits, note-taking and general text manipulation.
+- Friendly even for non-coding workflows - ideal for quick edits, note-taking and general text manipulation.
 - All this, without compromising Vim's philosophy.
 
 ## Features
@@ -27,14 +27,14 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode — making it 
 **Inside Insert Mode, you get enhanced with modern editing capabilities:**
 
 - **Text selection** using `Shift` + `Arrow Keys`.
-- When a selection is active, **typing replaces the selection** — without modifying Vim registers.
+- When a selection is active, **typing replaces the selection** - without modifying Vim registers.
 - **Fast cursor movement** with `Ctrl` + `←` and `→` (similar to Vim's `b` and `e` but enhanced) Note: it relies on what set in `vim.opt.iskeyword`.
 - **Jump between paragraphs** with `Ctrl` + `↓` and `↑` (same as vim's `{` and `}`).
 - **Word-wise selection** with `Ctrl` + `Shift` + `Arrow Keys`.
 - Full support for `Home`, `End`, `Page Up`, and `Page Down`.
   `Ctrl` + `Home` jumps to the beginning of the file, `Ctrl` + `End` to the end. Obviously, they can combined with `Shift` for Select mode.
-- **Copy/Cut/Paste op.**: `Ctrl` + `C`, `Ctrl` + `V`, and `Ctrl` + `X` for copy, paste, and cut — fully compatible with the **system clipboard**. (*)
-- **Wrapping utilities**: after selecting text, press e.g. `)` to wrap it in parentheses — **selection remains active**, allowing for rapid combined operations, i.e. `)` and then `"` does `("ciao")`.
+- **Copy/Cut/Paste op.**: `Ctrl` + `C`, `Ctrl` + `V`, and `Ctrl` + `X` for copy, paste, and cut - fully compatible with the **system clipboard**. (*)
+- **Wrapping utilities**: after selecting text, press e.g. `)` to wrap it in parentheses - **selection remains active**, allowing for rapid combined operations, i.e. `)` and then `"` does `("ciao")`.
 - **Search navigation** with `F3` and `F2` (or `Shift-F3`). Press `F4` to exit highlight mode (if enabled).
 - `Ctrl + F` opens the search prompt. If text is selected, it is used as the search query. (*)
 - **Undo/Redo** with `Ctrl + Z` and `Ctrl + Y`. Note: it's reccomanded to set undo breakpoints in insert mode for a better experience. (*)
@@ -60,10 +60,10 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
   end,
 },
 ```
->setup() is required — call it without arguments to use the default behavior.
+>setup() is required - call it without arguments to use the default behavior.
 
 Configuration:
-- `C` for `Ctrl` or `M` for `Meta (Alt)`; it sets the key for Copy/Cut/Paste, Undo/Redo, Search, Select All and convert Select to S-Line; default is `C`.
+- operations_key: `C` for `Ctrl` or `M` for `Meta (Alt)`. It sets the key for Copy/Cut/Paste, Undo/Redo, Search, Select All and convert Select to S-Line. Default is `C`.
 
 
 ## Roadmap
