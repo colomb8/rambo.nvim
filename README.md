@@ -54,7 +54,8 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it id
 ```lua
 for _, char in ipairs({ ",", ".", ";", " " }) do
   vim.keymap.set("i", char, char .. "<C-g>u")
-end```
+end
+```
 
 - Set different highlights to Visual vs Select mode with:
 
@@ -78,7 +79,8 @@ vim.api.nvim_create_autocmd("ModeChanged", {
         -- fg = '#FFFFFF',
       })
   end
-})```
+})
+```
 
 ## Installation and Config
 
@@ -92,7 +94,8 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
       -- operations_key = 'C', -- 'C' or 'M'
     })
   end,
-},```
+},
+```
 
 >setup() is required - call it without arguments to use the default behavior.
 
