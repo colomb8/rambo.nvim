@@ -298,7 +298,7 @@ local M = {}
 ------------------------------------------------------------------------------
 
 vim.api.nvim_create_autocmd("ModeChanged", {
-  pattern = "*:ni[IRV]",
+  pattern = "*:ni*", -- "*:ni[IRV]"
   callback = function(args)
     vim.o.selection = 'exclusive'
     insert_special = true
@@ -890,22 +890,25 @@ function M.setup(cfg)
     end)
   end
 
-  -- rmbMove Lines in Insert ---------------------------------------------------
+  -- Move Lines in Insert ------------------------------------------------------
 
-  vim.keymap.set('i', '<M-UP>', rmbMoveLineUp)
-  vim.keymap.set('i', '<M-DOWN>', rmbMoveLineDown)
-  vim.keymap.set('s', '<M-UP>', rmbMoveLinesUp)
-  vim.keymap.set('s', '<M-DOWN>', rmbMoveLinesDown)
+  vim.keymap.set('i', '<M-S-UP>', rmbMoveLineUp)
+  vim.keymap.set('i', '<M-S-DOWN>', rmbMoveLineDown)
+  vim.keymap.set('s', '<M-S-UP>', rmbMoveLinesUp)
+  vim.keymap.set('s', '<M-S-DOWN>', rmbMoveLinesDown)
 
+  -- Scroll window
+  -- FIXME: maybe better with an API
+  vim.keymap.set({'i', 's'}, '<M-UP>', '<C-o><C-y>')
+  vim.keymap.set({'i', 's'}, '<M-DOWN>', '<C-o><C-e>')
 
   -- Tab for indent in Select mode ---------------------------------------------
-
   vim.keymap.set('s', '<TAB>', function()
     local mode = vim.fn.mode()
-    if mode == 's' or mode == '\19' -- Select or Select-block (^S)
-      then
+    vim.fn.mode():match("[nvV\22]")
+    if mode:match('[s\19]') then -- Select or Select-block (^S)
       return '<C-g>V>gv<C-g>'
-    elseif vim.fn.mode() == 'S' then
+    elseif mode:match('[S]') then -- Select or Select-Line
       return '<C-g>>gv<C-g>'
     else
       error(mode)
@@ -915,10 +918,9 @@ function M.setup(cfg)
 
   vim.keymap.set('s', '<S-TAB>', function()
     local mode = vim.fn.mode()
-    if mode == 's' or mode == '\19' -- Select or Select-block (^S)
-      then
+    if mode:match('[s\19]') then -- Select or Select-block (^S)
       return '<C-g>V<gv<C-g>'
-    elseif vim.fn.mode() == 'S' then
+    elseif mode:match('[S]') then -- Select or Select-Line
       return '<C-g><gv<C-g>'
     else
       error(mode)
@@ -1018,8 +1020,8 @@ function M.setup(cfg)
   end)
 
   -- Del/BS in Select (blackhole reg)
-  vim.keymap.set('s', '<DEL>', '<C-g>"_c' )
-  vim.keymap.set('s', '<BS>', '<C-g>"_c' )
+  vim.keymap.set('s', '<DEL>', '<C-g>"_c')
+  vim.keymap.set('s', '<BS>', '<C-g>"_c')
 
   -- Cycle between ins-special-Visual and ins-special-Select modes
   vim.keymap.set('x', '<INSERT>', function()
@@ -1082,6 +1084,16 @@ function M.setup(cfg)
 
   --[[
 
+    Modes:
+
+    ['v'] = true, -- visual
+    ['V'] = true, -- visual line
+    ['\22'] = true, -- visual block (^V)
+    ['s'] = true, -- select
+    ['S'] = true, -- select line
+    ['\19'] = true, -- select block (^S)
+
+  Functions:
 
   1) function getSelectionRawBounds()
     - dep: none

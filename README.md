@@ -23,7 +23,7 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it id
 
 ## Features
 
-**Outside Insert Mode, everything behaves as expected.**  
+**Outside Insert Mode, everything behaves as expected.**
 **Inside Insert Mode, you get enhanced with modern editing capabilities:**
 
 - **Text selection** using `Shift` + `Arrow Keys`.
@@ -38,13 +38,47 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it id
 - **Search navigation** with `F3` and `F2` (or `Shift-F3`). Press `F4` to exit highlight mode (if enabled).
 - `Ctrl + F` opens the search prompt. If text is selected, it is used as the search query. (*)
 - **Undo/Redo** with `Ctrl + Z` and `Ctrl + Y`. Note: it's reccomanded to set undo breakpoints in insert mode for a better experience. (*)
-- **Move lines up/down** with `Alt + ↑ / ↓`. Works on single or multiple selected lines.
+- **Move lines up/down** with `Alt Shift + ↑ / ↓`. Works on single or multiple selected lines.
 - While selecting one or more lines, use `Tab` and `Shift` + `Tab` to **indent or dedent**.
 - `Ctrl` + `a` for select all. (*)
 - `Ctrl` + `l` for convert Select to S-Line. (*)
 - `Insert` key allows to quickly switch between Select and Visual mode.
+- `Meta (Alt)` + `↑ / ↓` for scroll window.
 
 (*) Note: `Ctrl` can be replaced with `Meta (alt)` with `operations_key` setting.
+
+## Tips
+
+- Set undo breakpoints in insert mode with:
+
+```lua
+for _, char in ipairs({ ",", ".", ";", " " }) do
+  vim.keymap.set("i", char, char .. "<C-g>u")
+end```
+
+- Set different highlights to Visual vs Select mode with:
+
+```lua
+local bg_visual = '#004D8A'
+local bg_select =  '#732BF5'
+vim.api.nvim_create_autocmd("ModeChanged", {
+  pattern = "*:[vV\22]*",
+  callback = function(args)
+      vim.api.nvim_set_hl(0, 'Visual', {
+        bg = bg_visual,
+        -- fg = '#FFFFFF',
+      })
+  end
+})
+vim.api.nvim_create_autocmd("ModeChanged", {
+  pattern = "*:[sS\19]*",
+  callback = function(args)
+      vim.api.nvim_set_hl(0, 'Visual', {
+        bg = bg_select,
+        -- fg = '#FFFFFF',
+      })
+  end
+})```
 
 ## Installation and Config
 
@@ -58,19 +92,19 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
       -- operations_key = 'C', -- 'C' or 'M'
     })
   end,
-},
-```
+},```
+
 >setup() is required - call it without arguments to use the default behavior.
 
 Configuration:
 - `operations_key`: `C` for `Ctrl` or `M` for `Meta (Alt)`. It sets the key for Copy/Cut/Paste, Undo/Redo, Search, Select All and convert Select to S-Line. Default is `C`.
 
-
 ## Roadmap
 
-- `:help` Vim documentation – provide Vim help file (:help rambo) for discoverability.
-- In case of line wrap, Up/Down should follow virtual text (like gj and gk).
-- Plugin custom configuration – allow users to customize some key mappings and behavior via `setup({ ... })`.
+- `:help` Vim documentation – provide Vim help file (`:help rambo`) for discoverability.
+- Horizontal move when selection is on one line only (like matze/vim-move)
+- In case of line wrap, Up/Down should follow virtual text (like `gj` and `gk`).
+- Plugin custom configuration – allow users to customize some key mappings and behavior via `setup`.
 - Unicode support – extend compatibility beyond ASCII for smooth editing also in international contexts.
 - Simple multicursor support – implement basic but handy multicursor editing.
 
