@@ -27,14 +27,14 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it id
 **Inside Insert Mode, you get enhanced with modern editing capabilities:**
 
 - **Text selection** using `Shift` + `Arrow Keys`.
-- When a selection is active, **typing replaces the selection** - without modifying Vim registers.
+- When a selection is active, **typing replaces the selection** - as in any modern editor.
 - **Fast cursor movement** with `Ctrl` + `←` and `→` (similar to Vim's `b` and `e` but enhanced) Note: it relies on what set in `vim.opt.iskeyword`.
 - **Jump between paragraphs** with `Ctrl` + `↓` and `↑` (same as vim's `{` and `}`).
 - **Word-wise selection** with `Ctrl` + `Shift` + `Arrow Keys`.
 - Full support for `Home`, `End`, `Page Up`, and `Page Down`.
   `Ctrl` + `Home` jumps to the beginning of the file, `Ctrl` + `End` to the end. Obviously, they can combined with `Shift` for Select mode.
-- **Copy/Cut/Paste op.**: `Ctrl` + `C`, `Ctrl` + `V`, and `Ctrl` + `X` for copy, paste, and cut - fully compatible with the **system clipboard**. (*)
-- **Wrapping utilities**: after selecting text, press e.g. `)` to wrap it in parentheses - **selection remains active**, allowing for rapid combined operations, i.e. `)` and then `"` does `("ciao")`.
+- **Copy/Cut/Paste op.**: `Ctrl` + `C`, `Ctrl` + `V`, and `Ctrl` + `X` for copy, paste, and cut - fully compatible with the **system clipboard**. Note: these operations rely on a *rambo register* which smartly interacts with Vim registers. For example, replacing selected text by typing new content does not affect the Rambo register. (*)
+- **Wrapping utilities**: after selecting text, press a character like `)` to wrap it in parentheses — the **selection remains active**, allowing for quick chained operations. For example, pressing `)` followed by `"` results in `("ciao")`.
 - **Search navigation** with `F3` and `F2` (or `Shift-F3`). Press `F4` to exit highlight mode (if enabled).
 - `Ctrl + F` opens the search prompt. If text is selected, it is used as the search query. (*)
 - **Undo/Redo** with `Ctrl + Z` and `Ctrl + Y`. Note: it's reccomanded to set undo breakpoints in insert mode for a better experience. (*)

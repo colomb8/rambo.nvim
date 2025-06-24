@@ -81,6 +81,7 @@ lpa
 
 -- FIXME:
 -- dopo selezione ed eliminazione, per uscire si deve premere esc 2 volte
+-- copiare in select line non fa lampeggiare tutte le linee ma solo una sotto selezione
 -- move up/down
   -- refactoring con nuove funzioni
   -- sposta anche il vertical split...misteriosamente

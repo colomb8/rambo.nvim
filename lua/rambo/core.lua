@@ -1072,6 +1072,7 @@ function M.setup(cfg)
     {'"', '"', '"'},
     {"'", "'", "'"},
     {"`", "`", "`"},
+    {"*", "*", "*"},
     -- commented becomes repeating it manually is better
     -- {'"""', '"""', '"""'},
     -- {"```", "```", "```"},
