@@ -42,7 +42,7 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it id
 - While selecting one or more lines, use `Tab` and `Shift` + `Tab` to **indent or dedent**.
 - `Ctrl` + `a` for select all. (*)
 - `Ctrl` + `l` for convert Select to S-Line. (*)
-- `Insert` key allows to quickly switch between Select and Visual mode.
+- `Insert` key allows to quickly switch between Select and Visual mode (it is also handy to enter insert mode when in normal).
 - `Meta (Alt)` + `↑ / ↓` for scroll window.
 
 (*) Note: `Ctrl` can be replaced with `Meta (alt)` with `operations_key` setting.

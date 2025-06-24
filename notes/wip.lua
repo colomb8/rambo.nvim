@@ -3,14 +3,15 @@
 -- Scratch / Notes
 ------------------------------------------------------------------------------
 
---[[
+--[[ test playground
+
 reg
-vecchia%trega
+vecchia%strega
 
 ciao di da--talo    
 mamma s $ciao ciao 
               
-$vecchia vecchia    -- plλto antanoidculo
+$vecchia vecchia    -- plλto antanoidculo*
 -
     - mamma - cia%
 -
@@ -25,16 +26,19 @@ exclusive
   paste in select dir 1
   paste in select dir -1
 
-oza
-   e turista della democrazia    
-asburgica troia
+Se questa è la forma di democrazia che intendete usare per chiudere le parole
+del presidente del Consiglio europeo, vi posso dire che dovreste venire...
+come turisti in Italia, ma che qui sembrate turisti della democrazia,
+dei turisti della democrazia!
 
 --
-ciao cippa
+ciao cippa-lippa
 lipa
 lpa
 
 ]]--
+
+
 
 --[[
 
@@ -76,7 +80,7 @@ lpa
   - Inclusive/Esclusive Logic: NO
 
 -- FIXME:
--- dopo selezione e eliminazione, per uscire si deve premere esc 2 volte
+-- dopo selezione ed eliminazione, per uscire si deve premere esc 2 volte
 -- move up/down
   -- refactoring con nuove funzioni
   -- sposta anche il vertical split...misteriosamente

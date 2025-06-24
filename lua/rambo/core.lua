@@ -318,7 +318,9 @@ vim.api.nvim_create_autocmd("InsertEnter", {
 
 vim.api.nvim_create_autocmd("TextYankPost", { -- yank or delete
   callback = function()
-    if vim.fn.mode():match("[nvV\22]") then -- normal or any visual
+    local mode = vim.fn.mode(1)
+    -- if mode:match("[nvV\22]*") then -- normal or any visual
+    if mode ~= 'niI' then -- exclude Select-Insert
       rambo_register_lines = splitStr(vim.fn.getreg('"'), '\n')
     end
   end,
@@ -905,10 +907,16 @@ function M.setup(cfg)
   -- Tab for indent in Select mode ---------------------------------------------
   vim.keymap.set('s', '<TAB>', function()
     local mode = vim.fn.mode()
-    vim.fn.mode():match("[nvV\22]")
-    if mode:match('[s\19]') then -- Select or Select-block (^S)
+    if mode:match('[s]') then -- Select
+      r1, _, r2, _ = getSelectionRawBounds()
+      if r1 == r2 then -- same line
+        return '<C-g>"_c<TAB>' -- (blackhole reg)
+      else -- different lines
+        return '<C-g>V>gv<C-g>'
+      end
+    elseif mode:match('[\19]') then -- Select-block (^S)
       return '<C-g>V>gv<C-g>'
-    elseif mode:match('[S]') then -- Select or Select-Line
+    elseif mode:match('[S]') then -- Select-Line
       return '<C-g>>gv<C-g>'
     else
       error(mode)
@@ -918,9 +926,16 @@ function M.setup(cfg)
 
   vim.keymap.set('s', '<S-TAB>', function()
     local mode = vim.fn.mode()
-    if mode:match('[s\19]') then -- Select or Select-block (^S)
+    if mode:match('[s]') then -- Select
+      r1, _, r2, _ = getSelectionRawBounds()
+      if r1 == r2 then -- same line
+        return nil
+      else -- different lines
+        return '<C-g>V<gv<C-g>'
+      end
+    elseif mode:match('[s\19]') then -- Select-block (^S)
       return '<C-g>V<gv<C-g>'
-    elseif mode:match('[S]') then -- Select or Select-Line
+    elseif mode:match('[S]') then -- Select-Line
       return '<C-g><gv<C-g>'
     else
       error(mode)
@@ -1078,11 +1093,79 @@ function M.setup(cfg)
     end)
   end
 
+
   ------------------------------------------------------------------------------
   -- Scratch / Notes
   ------------------------------------------------------------------------------
 
   --[[
+
+    -- test ----------------------------------------------------
+
+    local function visualCoversWholeLines(dir)
+      local _, v_row_start, v_col_start, _ = unpack(vim.fn.getpos("v"))
+      local _, v_row_end, v_col_end, _ = unpack(vim.fn.getpos("."))
+      --
+      local v_line_start = vim.fn.getline(v_row_start)
+      local v_line_end = vim.fn.getline(v_row_end)
+      --
+      local v_starts_at_bol = (v_col_start == 1) or (#v_line_start == 0)
+      local v_ends_at_eol =
+        (v_col_end >= #v_line_end) or (#v_line_end == 0)
+      local v_starts_at_eol =
+        (v_col_start >= #v_line_start) or (#v_line_start == 0)
+      local v_ends_at_bol = (v_col_end == 1) or (#v_line_end == 0)
+      -- local dir = VisualDirection()
+      if dir ==  1 then
+        return (v_starts_at_bol and v_ends_at_eol)
+      end
+      if dir == -1 then
+        return (v_starts_at_eol and v_ends_at_bol)
+      end
+    end
+
+    vim.keymap.set('x', '=', function()
+      local vmode = vim.fn.mode():sub(1, 1)
+      assert(vmode == 'v' or vmode == 'V', 'vmode: ' .. vmode)
+      local _, _, _, _, dir = getSelectionBoundsAndDirection()
+      -- local dir = getVisualOrSelectDirection()
+      assert(dir == 1 or dir == -1, 'dir: ' .. dir)
+      --
+      local ypexpr = '"zy"zP'
+      --
+      local res = ''
+      if vmode == 'V' then
+        --
+        res = res .. ypexpr
+        if dir == 1 then
+          res = res .. "'[V']"
+        elseif dir == -1 then
+          res = res .. "']V'["
+        end
+        --
+      elseif vmode == 'v' then
+        local cwl = visualCoversWholeLines(dir)
+        if cwl then
+          res = res .. 'V'
+          --
+          res = res .. ypexpr
+          if dir == 1 then
+            res = res .. "'[V']"
+          elseif dir == -1 then
+            res = res .. "']V'["
+          end
+          --
+        else
+          res = res .. ypexpr
+          if dir == 1 then
+            res = res .. "`<v`>"
+          elseif dir == -1 then
+            res = res .. "`>v`<"
+          end
+        end
+      end
+      return res
+    end, { expr = true, desc = 'Duplicate selection' })
 
     Modes:
 
