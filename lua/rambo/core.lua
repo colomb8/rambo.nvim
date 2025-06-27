@@ -317,6 +317,8 @@ vim.api.nvim_create_autocmd("InsertEnter", {
 })
 
 vim.api.nvim_create_autocmd("TextYankPost", { -- yank or delete
+  -- from documentation: "TextYankPost Just after a yank or deleting command,
+  -- but not if the black hole register quote_ is used nor for setreg()"
   callback = function()
     local mode = vim.fn.mode(1)
     -- if mode:match("[nvV\22]*") then -- normal or any visual
@@ -1035,8 +1037,8 @@ function M.setup(cfg)
   end)
 
   -- Del/BS in Select (blackhole reg)
-  vim.keymap.set('s', '<DEL>', '<C-g>"_c')
-  vim.keymap.set('s', '<BS>', '<C-g>"_c')
+  vim.keymap.set('s', '<DEL>', '<C-g>"_d')
+  vim.keymap.set('s', '<BS>', '<C-g>"_d')
 
   -- Cycle between ins-special-Visual and ins-special-Select modes
   vim.keymap.set('x', '<INSERT>', function()
@@ -1073,7 +1075,7 @@ function M.setup(cfg)
     {"'", "'", "'"},
     {"`", "`", "`"},
     {"*", "*", "*"},
-    -- commented becomes repeating it manually is better
+    -- commented because user can repeat it manually
     -- {'"""', '"""', '"""'},
     -- {"```", "```", "```"},
     }) do
