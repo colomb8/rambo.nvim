@@ -18,7 +18,7 @@ function M.setup(user_opts)
 
   local config = vim.tbl_deep_extend("force", {
     operations_key = 'C',
-    c_right_mode = 'eow',
+    c_right_mode = 'bow',
   },
   user_opts or {})
 
