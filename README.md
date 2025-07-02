@@ -28,7 +28,7 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it id
 
 - **Text selection** using `Shift` + `Arrow Keys`.
 - When a selection is active, **typing replaces the selection** - as in any modern editor.
-- **Fast cursor movement** with `Ctrl` + `←` and `→` (similar to Vim's `b` and `e` but enhanced) Note: it relies on what set in `vim.opt.iskeyword`.
+- **Fast cursor movement** with `Ctrl` + `←` and `→` (similar to Vim's `b` and `e` but enhanced) Notes:(1) it relies on what set in `vim.opt.iskeyword`. (2) `C-Right` can be configured, see documentation.
 - **Jump between paragraphs** with `Ctrl` + `↓` and `↑` (same as vim's `{` and `}`).
 - **Word-wise selection** with `Ctrl` + `Shift` + `Arrow Keys`.
 - Full support for `Home`, `End`, `Page Up`, and `Page Down`.
@@ -82,7 +82,7 @@ vim.api.nvim_create_autocmd("ModeChanged", {
 })
 ```
 
-## Installation and Config
+## Installation and Configuration
 
 Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
 
@@ -92,6 +92,7 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
   config = function()
     require("rambo").setup({
       -- operations_key = 'C', -- 'C' or 'M'
+      -- c_right_mode = 'bow', -- 'bow' or 'eow'
     })
   end,
 },
@@ -100,7 +101,8 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
 >setup() is required - call it without arguments to use the default behavior.
 
 Configuration:
-- `operations_key`: `C` for `Ctrl` or `M` for `Meta (Alt)`. It sets the key for Copy/Cut/Paste, Undo/Redo, Search, Select All and convert Select to S-Line. Default is `C`.
+- `operations_key`: use `C` for `Ctrl` or `M` for `Meta (Alt)`. This sets the modifier key for Copy/Cut/Paste, Undo/Redo, Search, Select All and convert Select to S-Line. Default is `C`.
+- `c_right_mode`: controls how the `C-Right` motion behaves. With `bow` the cursor jumps to the begining of next word. With `eow` the cursor jumps to the end of next word. Default is `bow`.
 
 ## Roadmap
 

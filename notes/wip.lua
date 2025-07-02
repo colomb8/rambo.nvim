@@ -79,8 +79,10 @@ lpa
   - assert: none
   - Inclusive/Esclusive Logic: NO
 
--- FIXME:
--- copiare in select line non fa lampeggiare tutte le linee ma solo una sotto selezione
+-- FIXME/TODOs
+-- modalità opzionale: c-right va fino all'inizio della parola successiva (vedi teams)
+-- quando si seleziona un testo, evidenzia ovunque appare quel testo (vedi sublime)
+-- bug: copiare in select line non fa lampeggiare tutte le linee ma solo una sotto selezione
 -- move up/down
   -- refactoring con nuove funzioni
   -- sposta anche il vertical split...misteriosamente

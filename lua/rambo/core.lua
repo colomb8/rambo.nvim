@@ -350,6 +350,24 @@ local function getFirstEndOfWord(line)
   return to and to - 1
 end
 
+local function getNextBeginningOfWord(line)
+  -- inclusive
+  -- vim.regex uses vim.o.iskeyword !
+  local r = vim.regex(""
+    .. "\\("
+      -- kw or blank            , punct/symbol
+    .. "[[:keyword:][:blank:]]" .. "[^[:keyword:][:blank:]]"
+    .. "\\)"
+    .. "\\|" -- or
+    .. "\\("
+      -- blank or punct/symbol, kw
+       .. "[^[:keyword:]]" .. "[[:keyword:]]"
+    .. "\\)"
+  )
+  local _, to = r:match_str(line .. " ") -- <--
+  return to and to - 1
+end
+
 local function getLastBeginningOfWord(line)
   -- vim.regex uses vim.o.iskeyword !
   local tmp = getFirstEndOfWord(line:reverse())
@@ -366,38 +384,6 @@ local function getFirstBeginningOfWord(line)
   )
   local from, to = r:match_str(" " .. line) -- <--
   return to and to - 1
-end
-
-local function rmbMotionCRight()
-  local col = vim.fn.col('.')
-  local row = vim.fn.line('.')
-  local line = vim.fn.getline('.')
-  local line_len = line:len()
-  --
-  local line_l = line:sub(0, col - 1)
-  local line_r = line:sub(col)
-  local col_feow_r = getFirstEndOfWord(line_r)
-  --
-  local row_target = row
-  local col_target
-  if col < line_len then
-    if not col_feow_r then
-      col_target = line_len + 1
-    else
-      col_target = line_l:len() + col_feow_r + 1
-    end
-  elseif col == line_len then
-    col_target = line_len + 1
-  else -- col > line_len (onemore)
-    if row < vim.fn.line('$') then
-      row_target = row + 1
-      col_target = 1
-    else
-      col_target = col -- (return)
-    end
-  end
-  --
-  setCursor(row_target, col_target)
 end
 
 local function rmbMotionCLeft()
@@ -491,7 +477,7 @@ local function rmbMotionRight()
   local col_target
   if col <= line_len then
       col_target = col + 1
-  else -- col > line_end (onemore) 
+  else -- col > line_end (onemore)
     if row == row_last then
       return nil
     else
@@ -769,13 +755,60 @@ function M.setup(cfg)
   for k, _ in pairs(cfg) do
     assert(vim.list_contains({
       'operations_key',
+      'c_right_mode',
     }, k), 'unknown configuration name: ' .. k)
   end
 
   assert(
     vim.list_contains({'C', 'M'}, cfg.operations_key),
-    '`operations_key` supports only "C" or "M"; received ' .. cfg.operations_key)
+    '`operations_key` supports only "C" or "M"; received: '
+    .. tostring(cfg.operations_key))
 
+  assert(
+    vim.list_contains({'eow', 'bow'}, cfg.c_right_mode),
+    '`c_right_mode` supports only "eow" or "bow"; received: '
+    .. tostring(cfg.c_right_mode))
+
+  -- Config functions ----------------------------------------------------------
+
+  local function rmbMotionCRight()
+    local col = vim.fn.col('.')
+    local row = vim.fn.line('.')
+    local line = vim.fn.getline('.')
+    local line_len = line:len()
+    --
+    local line_l = line:sub(0, col - 1)
+    local line_r = line:sub(col)
+    local col_cright
+    if cfg.c_right_mode == 'eow' then
+      col_cright = getFirstEndOfWord(line_r)
+    elseif cfg.c_right_mode == 'bow' then
+      col_cright = getNextBeginningOfWord(line_r)
+    else
+      error(cfg.c_right_mode)
+    end
+    --
+    local row_target = row
+    local col_target
+    if col < line_len then
+      if not col_cright then
+        col_target = line_len + 1
+      else
+        col_target = line_l:len() + col_cright + 1
+      end
+    elseif col == line_len then
+      col_target = line_len + 1
+    else -- col > line_len (onemore)
+      if row < vim.fn.line('$') then
+        row_target = row + 1
+        col_target = 1
+      else
+        col_target = col -- (return)
+      end
+    end
+    --
+    setCursor(row_target, col_target)
+  end
 
   -- Moving in Insert ----------------------------------------------------------
 
