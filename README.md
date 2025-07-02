@@ -28,7 +28,7 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it id
 
 - **Text selection** using `Shift` + `Arrow Keys`.
 - When a selection is active, **typing replaces the selection** - as in any modern editor.
-- **Fast cursor movement** with `Ctrl` + `←` and `→` (similar to Vim's `b` and `e` but enhanced) Notes:(1) it relies on what set in `vim.opt.iskeyword`. (2) `C-Right` can be configured, see documentation.
+- **Fast cursor movement** with `Ctrl` + `←` and `→` (similar to Vim's `b` and `e` but enhanced) Notes: (1) it relies on what set in `vim.opt.iskeyword`; (2) The `C-Right` motion is available in two variants, depending on the configuration.
 - **Jump between paragraphs** with `Ctrl` + `↓` and `↑` (same as vim's `{` and `}`).
 - **Word-wise selection** with `Ctrl` + `Shift` + `Arrow Keys`.
 - Full support for `Home`, `End`, `Page Up`, and `Page Down`.
