@@ -16,15 +16,6 @@ License: MIT (see LICENSE)
 -- Lua/Neovim Utility Functions
 ------------------------------------------------------------------------------
 
-local function byteToUtf(line, col)
-  local utf_32_index, utf_16_index = vim.str_utfindex(line, col and col - 1)
-  return utf_32_index
-end
-
-local function utfToByte(line, index)
-  return vim.str_byteindex(line, index) + 1
-end
-
 local function splitStr(str, sep)
   sep = sep or '%s'
   local t = {}
@@ -745,6 +736,10 @@ local function setSelect(r1, c1, r2, c2, dir)
   end
 end
 
+local function save()
+  vim.cmd(":w")
+end
+
 ------------------------------------------------------------------------------
 -- Rambo.nvim Keybindings
 ------------------------------------------------------------------------------
@@ -998,6 +993,10 @@ function M.setup(cfg)
   -- Insert mode: Paste from rambo_register_lines
   vim.keymap.set('i', '<' .. cfg.operations_key .. '-v>', function() rmbPaste('insert') end)
 
+  -- Save in Insert/Select
+  vim.keymap.set('i', '<' .. cfg.operations_key .. '-s>', save)
+  vim.keymap.set('s', '<' .. cfg.operations_key .. '-s>', save)
+
   -- Undo/Redo in Insert/Select
   vim.keymap.set('i', '<' .. cfg.operations_key .. '-z>', '<C-o>u')
   vim.keymap.set('s', '<' .. cfg.operations_key .. '-z>', '<ESC>ui')
@@ -1137,6 +1136,15 @@ function M.setup(cfg)
   --[[
 
     -- test ----------------------------------------------------
+
+    local function byteToUtf(line, col)
+      local utf_32_index, utf_16_index = vim.str_utfindex(line, col and col - 1)
+      return utf_32_index
+    end
+
+    local function utfToByte(line, index)
+      return vim.str_byteindex(line, index) + 1
+    end
 
     local function visualCoversWholeLines(dir)
       local _, v_row_start, v_col_start, _ = unpack(vim.fn.getpos("v"))

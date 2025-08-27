@@ -44,6 +44,7 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it id
 - `Ctrl` + `l` for convert Select to S-Line. (*)
 - `Insert` key allows to quickly switch between Select and Visual mode (it is also handy to enter insert mode when in normal).
 - `Meta (Alt)` + `↑ / ↓` for scroll window.
+- `Ctrl-s` for saving current file.
 
 (*) Note: `Ctrl` can be replaced with `Meta (alt)` with `operations_key` setting.
 
