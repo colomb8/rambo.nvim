@@ -749,15 +749,9 @@ function M.setup(cfg)
   -- Cfg validation ------------------------------------------------------------
   for k, _ in pairs(cfg) do
     assert(vim.list_contains({
-      'operations_key',
       'c_right_mode',
     }, k), 'unknown configuration name: ' .. k)
   end
-
-  assert(
-    vim.list_contains({'C', 'M'}, cfg.operations_key),
-    '`operations_key` supports only "C" or "M"; received: '
-    .. tostring(cfg.operations_key))
 
   assert(
     vim.list_contains({'eow', 'bow'}, cfg.c_right_mode),
@@ -924,15 +918,15 @@ function M.setup(cfg)
 
   -- Move Lines in Insert ------------------------------------------------------
 
-  vim.keymap.set('i', '<M-S-UP>', rmbMoveLineUp)
-  vim.keymap.set('i', '<M-S-DOWN>', rmbMoveLineDown)
-  vim.keymap.set('s', '<M-S-UP>', rmbMoveLinesUp)
-  vim.keymap.set('s', '<M-S-DOWN>', rmbMoveLinesDown)
+  vim.keymap.set('i', '<M-UP>', rmbMoveLineUp)
+  vim.keymap.set('i', '<M-DOWN>', rmbMoveLineDown)
+  vim.keymap.set('s', '<M-UP>', rmbMoveLinesUp)
+  vim.keymap.set('s', '<M-DOWN>', rmbMoveLinesDown)
 
   -- Scroll window
   -- FIXME: maybe better with an API
-  vim.keymap.set({'i', 's'}, '<M-UP>', '<C-o><C-y>')
-  vim.keymap.set({'i', 's'}, '<M-DOWN>', '<C-o><C-e>')
+  vim.keymap.set({'i', 's'}, '<M-S-UP>', '<C-o><C-y>')
+  vim.keymap.set({'i', 's'}, '<M-S-DOWN>', '<C-o><C-e>')
 
   -- Tab for indent in Select mode ---------------------------------------------
   vim.keymap.set('s', '<TAB>', function()
@@ -976,44 +970,47 @@ function M.setup(cfg)
   -- Operations ----------------------------------------------------------------
 
   -- Select mode: Copy to { ", rambo_register_lines }
-  vim.keymap.set('s', '<' .. cfg.operations_key .. '-c>', rmbCopy)
+  vim.keymap.set('s', '<C-c>', rmbCopy)
 
   -- Select mode: Cut to { ", rambo_register_lines }
-  vim.keymap.set('s', '<' .. cfg.operations_key .. '-x>', rmbCut)
+  vim.keymap.set('s', '<C-x>', rmbCut)
 
   -- Select mode: Paste from rambo_register_lines
-  vim.keymap.set('s', '<' .. cfg.operations_key .. '-v>', function() rmbPaste('select') end)
+  vim.keymap.set('s', '<C-v>', function() rmbPaste('select') end)
 
   -- Insert mode: Copy -> No Op.
-  vim.keymap.set('i', '<' .. cfg.operations_key .. '-c>', '<NOP>')
+  vim.keymap.set('i', '<C-c>', '<NOP>')
 
   -- Insert mode: Cut -> No Op.
-  vim.keymap.set('i', '<' .. cfg.operations_key .. '-x>', '<NOP>')
+  vim.keymap.set('i', '<C-x>', '<NOP>')
 
   -- Insert mode: Paste from rambo_register_lines
-  vim.keymap.set('i', '<' .. cfg.operations_key .. '-v>', function() rmbPaste('insert') end)
+  vim.keymap.set('i', '<C-v>', function() rmbPaste('insert') end)
 
   -- Save in Insert/Select
-  vim.keymap.set('i', '<' .. cfg.operations_key .. '-s>', save)
-  vim.keymap.set('s', '<' .. cfg.operations_key .. '-s>', save)
+  vim.keymap.set('i', '<C-s>', save)
+  vim.keymap.set('s', '<C-s>', save)
 
-  -- Undo/Redo in Insert/Select
-  vim.keymap.set('i', '<' .. cfg.operations_key .. '-z>', '<C-o>u')
-  vim.keymap.set('s', '<' .. cfg.operations_key .. '-z>', '<ESC>ui')
-  -- vim.keymap.set('i', '<' .. cfg.operations_key .. '-Z>', '<C-o><C-r>') -- ko w C-
-  -- vim.keymap.set('s', '<' .. cfg.operations_key .. '-Z>', '<ESC><C-r>i') -- ko w C-
-  vim.keymap.set('i', '<' .. cfg.operations_key .. '-y>', '<C-o><C-r>')
-  vim.keymap.set('s', '<' .. cfg.operations_key .. '-y>', '<ESC><C-r>i')
+  -- Undo in Insert/Select
+  vim.keymap.set('i', '<C-z>', '<C-o>u')
+  vim.keymap.set('s', '<C-z>', '<ESC>ui')
+  -- Redo in Insert/Select
+  -- commented because C-Z doesn't work
+  -- vim.keymap.set('i', '<C-Z>', '<C-o><C-r>')
+  -- vim.keymap.set('s', '<C-Z>', '<ESC><C-r>i')
+  -- Warning! It overrides i_CTRL-Y
+  vim.keymap.set('i', '<C-y>', '<C-o><C-r>')
+  vim.keymap.set('s', '<C-y>', '<ESC><C-r>i')
 
   -- Select all
-  vim.keymap.set('i', '<' .. cfg.operations_key .. '-a>', function()
+  vim.keymap.set('i', '<C-a>', function()
     rmbMotionCHome()
     sendKeys('<C-o>v<C-g>', 'n')
-    vim.schedule(function() rmbMotionCEnd() end)
+    vim.schedule(rmbMotionCEnd)
   end)
 
   -- Search in Insert mode
-  vim.keymap.set('i', '<' .. cfg.operations_key .. '-f>', '<C-o>/')
+  vim.keymap.set('i', '<C-f>', '<C-o>/')
 
   -- F3 / F4 and S-F3 for jump between search results
   -- vim.keymap.set({'i', 's'}, '<F3>',  '<C-o>n')
@@ -1026,9 +1023,6 @@ function M.setup(cfg)
   end)
 
   -- Insert: search backward
-  vim.keymap.set('i', '<F15>', function()
-    sendKeys('<C-o>gN<C-g>', 'n')
-  end)
   vim.keymap.set('i', '<F2>', function()
     sendKeys('<C-o>gN<C-g>', 'n')
   end)
@@ -1037,33 +1031,25 @@ function M.setup(cfg)
   vim.keymap.set('s', '<F3>', function()
     sendKeys('<ESC><C-\\><C-o>gn<C-g>', 'nx')
   end)
-  vim.keymap.set('n', '<F3>', function()
-    sendKeys('i<C-\\><C-o>gn<C-g>', 'nx')
-  end)
+  -- vim.keymap.set('n', '<F3>', function()
+  --   sendKeys('i<C-\\><C-o>gn<C-g>', 'nx')
+  -- end)
 
   -- Select: search backward
-  vim.keymap.set('s', '<F15>', function()
-    rmbMotionLeft()
-    sendKeys('<ESC><C-\\><C-o>gN<C-g>', 'nx')
-  end)
-  vim.keymap.set('n', '<F15>', function()
-    rmbMotionLeft()
-    sendKeys('i<C-\\><C-o>gN<C-g>', 'nx')
-  end)
   vim.keymap.set('s', '<F2>', function()
     rmbMotionLeft()
     sendKeys('<ESC><C-\\><C-o>gN<C-g>', 'nx')
   end)
-  vim.keymap.set('n', '<F2>', function()
-    rmbMotionLeft()
-    sendKeys('i<C-\\><C-o>gN<C-g>', 'nx')
-  end)
+  -- vim.keymap.set('n', '<F2>', function()
+  --   rmbMotionLeft()
+  --   sendKeys('i<C-\\><C-o>gN<C-g>', 'nx')
+  -- end)
 
   -- Disable hlsearch
   vim.keymap.set({'n', 'i', 's'}, '<F4>',  '<cmd>:nohl<CR>')
 
   -- Search text under Selection
-  vim.keymap.set('s', '<' .. cfg.operations_key .. '-f>', function()
+  vim.keymap.set('s', '<C-f>', function()
     sendKeys('<C-g>', 'n')
     vim.schedule(function() sendKeys('*', 'n') end)
   end)
@@ -1088,10 +1074,15 @@ function M.setup(cfg)
     end
   end)
 
-  -- Switch Select to Select Line
-  vim.keymap.set('s', '<' .. cfg.operations_key .. '-l>', function()
+  -- Toggle Select <-> Select Line
+  vim.keymap.set('s', '<S-space>', function()
+    local mode = vim.fn.mode()
     if insert_special then
-      sendKeys('<C-g>V<C-g>', 'n')
+      if mode:match('[S]') then -- Select-Line
+        sendKeys('<C-g>v<C-g>', 'n')
+      else -- select or select block
+        sendKeys('<C-g>V<C-g>', 'n')
+      end
     else
       sendKeys('<C-l>', 'n')
     end

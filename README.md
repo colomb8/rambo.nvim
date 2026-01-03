@@ -33,20 +33,19 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it id
 - **Word-wise selection** with `Ctrl` + `Shift` + `Arrow Keys`.
 - Full support for `Home`, `End`, `Page Up`, and `Page Down`.
   `Ctrl` + `Home` jumps to the beginning of the file, `Ctrl` + `End` to the end. Obviously, they can combined with `Shift` for Select mode.
-- **Copy/Cut/Paste op.**: `Ctrl` + `C`, `Ctrl` + `V`, and `Ctrl` + `X` for copy, paste, and cut - fully compatible with the **system clipboard**. Note: these operations rely on a *rambo register* which smartly interacts with Vim registers. For example, replacing selected text by typing new content does not affect the Rambo register. (*)
+- **Copy/Cut/Paste op.**: `Ctrl` + `C`, `Ctrl` + `V`, and `Ctrl` + `X` for copy, paste, and cut - fully compatible with the **system clipboard**. Note: these operations rely on a *rambo register* which smartly interacts with Vim registers. For example, replacing selected text by typing new content does not affect the Rambo register.
 - **Wrapping utilities**: after selecting text, press a character like `)` to wrap it in parentheses — the **selection remains active**, allowing for quick chained operations. For example, pressing `)` followed by `"` results in `("ciao")`.
-- **Search navigation** with `F3` and `F2` (or `Shift-F3`). Press `F4` to exit highlight mode (if enabled).
-- `Ctrl + F` opens the search prompt. If text is selected, it is used as the search query. (*)
-- **Undo/Redo** with `Ctrl + Z` and `Ctrl + Y`. Note: it's reccomanded to set undo breakpoints in insert mode for a better experience. (*)
-- **Move lines up/down** with `Alt Shift + ↑ / ↓`. Works on single or multiple selected lines.
+- **Search navigation** with `F3` and `F2`. Press `F4` to exit highlight mode (if enabled).
+- `Ctrl + F` opens the search prompt. If text is selected, it is used as the search query.
+- **Undo/Redo** with `Ctrl + Z` and `Ctrl + Y`. Note: it's reccomanded to set undo breakpoints in insert mode for a better experience.
+- **Move lines up/down** with `Alt + ↑ / ↓`. Works on single or multiple selected lines.
 - While selecting one or more lines, use `Tab` and `Shift` + `Tab` to **indent or dedent**.
-- `Ctrl` + `a` for select all. (*)
-- `Ctrl` + `l` for convert Select to S-Line. (*)
+- `Ctrl` + `a` for select all.
+- `Shift` + `space` for toggle Select <-> S-Line.
 - `Insert` key allows to quickly switch between Select and Visual mode (it is also handy to enter insert mode when in normal).
-- `Meta (Alt)` + `↑ / ↓` for scroll window.
-- `Ctrl-s` for saving current file.
+- `Meta (Alt)` + `Shift` + `↑ / ↓` for scroll window.
+- `Ctrl-s` for save current file.
 
-(*) Note: `Ctrl` can be replaced with `Meta (alt)` with `operations_key` setting.
 
 ## Tips
 
@@ -92,7 +91,6 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
   "colomb8/rambo.nvim",
   config = function()
     require("rambo").setup({
-      -- operations_key = 'C', -- 'C' or 'M'
       -- c_right_mode = 'bow', -- 'bow' or 'eow'
     })
   end,
@@ -102,7 +100,6 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
 >setup() is required - call it without arguments to use the default behavior.
 
 Configuration:
-- `operations_key`: use `C` for `Ctrl` or `M` for `Meta (Alt)`. This sets the modifier key for Copy/Cut/Paste, Undo/Redo, Search, Select All and convert Select to S-Line. Default is `C`.
 - `c_right_mode`: controls how the `C-Right` motion behaves. With `bow` the cursor jumps to the begining of next word. With `eow` the cursor jumps to the end of next word. Default is `bow`.
 
 ## Roadmap
