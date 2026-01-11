@@ -5,7 +5,7 @@ Rambo.nvim
 
 Author: Dario Colombotto
   email: dario.colombotto@outlook.com
-  Telegram: https://t.me/colomb8
+  Telegram: https://t.me/colomb11
 
 License: MIT (see LICENSE)
 
@@ -63,6 +63,16 @@ local function insertLine(row, line)
       row - 1, -- end line, 0-based, exclusive
       true, -- strict_indexing
       {line} -- replacement
+    )
+end
+
+local function insertLines(row, lines)
+  vim.api.nvim_buf_set_lines(
+      0, -- buffer, 0 for current
+      row - 1, -- start line, 0-based, inclusive
+      row - 1, -- end line, 0-based, exclusive
+      true, -- strict_indexing
+      lines -- replacement
     )
 end
 
@@ -290,7 +300,7 @@ local M = {}
 
 vim.api.nvim_create_autocmd("ModeChanged", {
   pattern = "*:ni*", -- "*:ni[IRV]"
-  callback = function(args)
+  callback = function()
     vim.o.selection = 'exclusive'
     insert_special = true
   end,
@@ -373,7 +383,7 @@ local function getFirstBeginningOfWord(line)
       .. "[[:blank:]]" .. "[^[:blank:]]"
     .. "\\)"
   )
-  local from, to = r:match_str(" " .. line) -- <--
+  local _, to = r:match_str(" " .. line) -- <--
   return to and to - 1
 end
 
@@ -398,6 +408,45 @@ local function rmbMotionCLeft()
   else
     col_target = 1
   end
+  setCursor(row_target, col_target)
+end
+
+local function rmbMotionCRight(c_right_mode)
+  local col = vim.fn.col('.')
+  local row = vim.fn.line('.')
+  local line = vim.fn.getline('.')
+  local line_len = line:len()
+  --
+  local line_l = line:sub(0, col - 1)
+  local line_r = line:sub(col)
+  local col_cright
+  if c_right_mode == 'eow' then
+    col_cright = getFirstEndOfWord(line_r)
+  elseif c_right_mode == 'bow' then
+    col_cright = getNextBeginningOfWord(line_r)
+  else
+    error(c_right_mode)
+  end
+  --
+  local row_target = row
+  local col_target
+  if col < line_len then
+    if not col_cright then
+      col_target = line_len + 1
+    else
+      col_target = line_l:len() + col_cright + 1
+    end
+  elseif col == line_len then
+    col_target = line_len + 1
+  else -- col > line_len (onemore)
+    if row < vim.fn.line('$') then
+      row_target = row + 1
+      col_target = 1
+    else
+      col_target = col -- (return)
+    end
+  end
+  --
   setCursor(row_target, col_target)
 end
 
@@ -566,12 +615,32 @@ local function rmbMotionCDown()
   setCursor(row_target, col_target)
 end
 
+-- local function rmbMotionUp()
+--   sendKeys('<UP>', 'n')
+-- end
+--
+-- local function rmbMotionDown()
+--   sendKeys('<DOWN>', 'n')
+-- end
+
 local function rmbMotionUp()
-  sendKeys('<UP>', 'n')
+  local r = vim.fn.line('.')
+  if r == 1 then return nil end
+  local c = vim.fn.col('.')
+  local row_target = r - 1
+  local line_target_len = vim.fn.getline(row_target):len()
+  local col_target = math.min(c, line_target_len + 1)
+  setCursor(row_target, col_target)
 end
 
 local function rmbMotionDown()
-  sendKeys('<DOWN>', 'n')
+  local r = vim.fn.line('.')
+  if r >= vim.fn.line('$') then return nil end
+  local c = vim.fn.col('.')
+  local row_target = r + 1
+  local line_target_len = vim.fn.getline(row_target):len()
+  local col_target = math.min(c, line_target_len + 1)
+  setCursor(row_target, col_target)
 end
 
 local function rmbLeaveSelectLeft()
@@ -642,7 +711,7 @@ local function rmbMoveLinesUp()
   --
   sendKeys('<ESC>', 'n')
   setCursor(v_row_start - 1, v_col_start)
-  sendKeys('<C-o>v<C-g>', 'nx')
+  sendKeys('<C-o>V<C-g>', 'nx')
   setCursor(v_row_end - 1, v_col_end)
 end
 
@@ -660,7 +729,7 @@ local function rmbMoveLinesDown()
   --
   sendKeys('<ESC>', 'n')
   setCursor(v_row_start + 1, v_col_start)
-  sendKeys('<C-o>v<C-g>', 'nx')
+  sendKeys('<C-o>V<C-g>', 'nx')
   setCursor(v_row_end + 1, v_col_end)
 end
 
@@ -687,6 +756,7 @@ end
 
 local function rmbCut()
   local r1, c1, r2, c2, _ = getSelectionBoundsAndDirection()
+  if r1 == r2 and c1 == c2 + 1 then return nil end
   rambo_register_lines = getTextFromBounds(r1, c1, r2, c2)
   local tmp = table.concat(rambo_register_lines, '\n')
   vim.fn.setreg('"', tmp, 'c')
@@ -740,6 +810,46 @@ local function save()
   vim.cmd(":w")
 end
 
+local function rmbMoveSel(rmbMotion, c_right_mode)
+  local r1, c1, r2, c2, dir = getSelectionBoundsAndDirection()
+  assert(r1 == r2)
+  local r = r1
+  if c1 == c2 + 1 then
+    return nil
+  else
+    local text = getTextFromBounds(r, c1, r, c2)
+    sendKeys('<ESC>', 'n')
+    deleteText(r, c1, r, c2)
+    rmbMotion(c_right_mode)
+    local row_target = vim.fn.line('.')
+    local col_target = vim.fn.col('.')
+    insertText(row_target, col_target, text)
+    setSelect(row_target, col_target, row_target, col_target + (c2 - c1), dir)
+  end
+end
+
+local function rmbMoveSelLeft() return rmbMoveSel(rmbMotionLeft) end
+local function rmbMoveSelRight() return rmbMoveSel(rmbMotionRight) end
+local function rmbMoveSelCLeft() return rmbMoveSel(rmbMotionCLeft) end
+local function rmbMoveSelCRight(c_right_mode) return rmbMoveSel(rmbMotionCRight, c_right_mode) end
+local function rmbMoveSelUp() return rmbMoveSel(rmbMotionUp) end
+local function rmbMoveSelDown() return rmbMoveSel(rmbMotionDown) end
+local function rmbMoveSelHome() return rmbMoveSel(rmbMotionHome) end
+local function rmbMoveSelEnd() return rmbMoveSel(rmbMotionEnd) end
+
+local function rmbMoveSelCUp() return rmbMoveSel(rmbMotionCUp) end
+local function rmbMoveSelCDown() return rmbMoveSel(rmbMotionCDown) end
+local function rmbMoveSelPageUp() return rmbMoveSel(rmbMotionPageUp) end
+local function rmbMoveSelPageDown() return rmbMoveSel(rmbMotionPageDown) end
+local function rmbMoveSelCHome() return rmbMoveSel(rmbMotionCHome) end
+local function rmbMoveSelCEnd() return rmbMoveSel(rmbMotionCEnd) end
+
+-- TODO
+-- vedi not implemented: implementato insertLines
+-- ritestare op_prefix..sembra che non funzioni...
+-- aggiornare readme minimale
+-- pushare e propagare
+
 ------------------------------------------------------------------------------
 -- Rambo.nvim Keybindings
 ------------------------------------------------------------------------------
@@ -750,6 +860,7 @@ function M.setup(cfg)
   for k, _ in pairs(cfg) do
     assert(vim.list_contains({
       'c_right_mode',
+      'op_prefix',
     }, k), 'unknown configuration name: ' .. k)
   end
 
@@ -758,48 +869,25 @@ function M.setup(cfg)
     '`c_right_mode` supports only "eow" or "bow"; received: '
     .. tostring(cfg.c_right_mode))
 
-  -- Config functions ----------------------------------------------------------
+  -- Functions cfg dependant  ----------------------------------------------------------
 
-  local function rmbMotionCRight()
-    local col = vim.fn.col('.')
-    local row = vim.fn.line('.')
-    local line = vim.fn.getline('.')
-    local line_len = line:len()
-    --
-    local line_l = line:sub(0, col - 1)
-    local line_r = line:sub(col)
-    local col_cright
-    if cfg.c_right_mode == 'eow' then
-      col_cright = getFirstEndOfWord(line_r)
-    elseif cfg.c_right_mode == 'bow' then
-      col_cright = getNextBeginningOfWord(line_r)
-    else
-      error(cfg.c_right_mode)
-    end
-    --
-    local row_target = row
-    local col_target
-    if col < line_len then
-      if not col_cright then
-        col_target = line_len + 1
-      else
-        col_target = line_l:len() + col_cright + 1
-      end
-    elseif col == line_len then
-      col_target = line_len + 1
-    else -- col > line_len (onemore)
-      if row < vim.fn.line('$') then
-        row_target = row + 1
-        col_target = 1
-      else
-        col_target = col -- (return)
-      end
-    end
-    --
-    setCursor(row_target, col_target)
+  local function rmbMotionCRight_cfg()
+    return rmbMotionCRight(cfg.c_right_mode)
   end
 
-  -- Moving in Insert ----------------------------------------------------------
+  local function rmbMoveSelCRight_cfg()
+    return rmbMoveSelCRight(cfg.c_right_mode)
+  end
+
+  -- Fix inserting tab in select mode -----------------------------------------------
+
+  vim.keymap.set('s', '<TAB>', '<C-g>c<C-v><TAB>')
+
+  -- Go to the other end of selection -----------------------------------------------
+
+  vim.keymap.set('s', cfg.op_prefix .. '<C-o>', '<C-o>o')
+
+  -- Move cursor in Insert ----------------------------------------------------------
 
   for k, f in pairs({
     ['<LEFT>'] = rmbMotionLeft,
@@ -807,7 +895,7 @@ function M.setup(cfg)
     ['<UP>'] = rmbMotionUp,
     ['<DOWN>'] = rmbMotionDown,
     ['<C-LEFT>'] = rmbMotionCLeft,
-    ['<C-RIGHT>'] = rmbMotionCRight,
+    ['<C-RIGHT>'] = rmbMotionCRight_cfg,
     ['<C-UP>'] = rmbMotionCUp,
     ['<C-DOWN>'] = rmbMotionCDown,
     ['<HOME>'] = rmbMotionHome,
@@ -849,7 +937,7 @@ function M.setup(cfg)
   for k, f in pairs({
     ['<S-RIGHT>'] = rmbMotionRight,
     ['<S-DOWN>'] = rmbMotionDown,
-    ['<C-S-RIGHT>'] = rmbMotionCRight,
+    ['<C-S-RIGHT>'] = rmbMotionCRight_cfg,
     ['<C-S-DOWN>'] = rmbMotionCDown,
     -- ['<S-END>'] = rmbMotionEnd,
     ['<C-S-END>'] = rmbMotionCEnd,
@@ -879,7 +967,7 @@ function M.setup(cfg)
     ['<S-UP>'] = rmbMotionUp,
     ['<S-DOWN>'] = rmbMotionDown,
     ['<C-S-LEFT>'] = rmbMotionCLeft,
-    ['<C-S-RIGHT>'] = rmbMotionCRight,
+    ['<C-S-RIGHT>'] = rmbMotionCRight_cfg,
     ['<C-S-UP>'] = rmbMotionCUp,
     ['<C-S-DOWN>'] = rmbMotionCDown,
     ['<S-HOME>'] = rmbMotionHome,
@@ -900,7 +988,7 @@ function M.setup(cfg)
     ['<UP>'] = rmbMotionUp,
     ['<DOWN>'] = rmbMotionDown,
     ['<C-LEFT>'] = rmbMotionCLeft,
-    ['<C-RIGHT>'] = rmbMotionCRight,
+    ['<C-RIGHT>'] = rmbMotionCRight_cfg,
     ['<C-UP>'] = rmbMotionCUp,
     ['<C-DOWN>'] = rmbMotionCDown,
     ['<HOME>'] = rmbMotionHome,
@@ -916,101 +1004,203 @@ function M.setup(cfg)
     end)
   end
 
-  -- Move Lines in Insert ------------------------------------------------------
+  -- Move Lines ------------------------------------------------------
 
-  vim.keymap.set('i', '<M-UP>', rmbMoveLineUp)
-  vim.keymap.set('i', '<M-DOWN>', rmbMoveLineDown)
-  vim.keymap.set('s', '<M-UP>', rmbMoveLinesUp)
-  vim.keymap.set('s', '<M-DOWN>', rmbMoveLinesDown)
+  -- insert
+  vim.keymap.set({'i'}, '<M-UP>', function()
+    rmbMoveLineUp()
+  end)
+  vim.keymap.set({'i'}, '<M-DOWN>', function()
+    rmbMoveLineDown()
+  end)
+  -- select
+  vim.keymap.set({'s'}, '<M-UP>', function()
+    local mode = vim.fn.mode()
+    if mode:match('[s]') then -- Select
+      r, _, r, _ = getSelectionRawBounds()
+      if r1 == r2 then -- same line
+        rmbMoveSelUp()
+      else -- different lines
+        sendKeys('<C-g>V<C-g>', 'n') -- at first switch to Select-Line
+      end
+    elseif mode:match('[S]') then -- Select-Line
+      rmbMoveLinesUp()
+    elseif mode:match('[\19]') then -- Select-block (^S)
+      return nil
+    else
+      error(mode)
+    end
+  end)
+  vim.keymap.set({'s'}, '<M-DOWN>', function()
+    local mode = vim.fn.mode()
+    if mode:match('[s]') then -- Select
+      r1, _, r2, _ = getSelectionRawBounds()
+      if r1 == r2 then -- same line
+        rmbMoveSelDown()
+      else -- different lines
+        sendKeys('<C-g>V<C-g>', 'n') -- at first switch to Select-Line
+      end
+    elseif mode:match('[S]') then -- Select-Line
+      rmbMoveLinesDown()
+    elseif mode:match('[\19]') then -- Select-block (^S)
+      return nil
+    else
+      error(mode)
+    end
+  end)
 
   -- Scroll window
-  -- FIXME: maybe better with an API
+
   vim.keymap.set({'i', 's'}, '<M-S-UP>', '<C-o><C-y>')
   vim.keymap.set({'i', 's'}, '<M-S-DOWN>', '<C-o><C-e>')
 
-  -- Tab for indent in Select mode ---------------------------------------------
-  vim.keymap.set('s', '<TAB>', function()
-    local mode = vim.fn.mode()
-    if mode:match('[s]') then -- Select
-      r1, _, r2, _ = getSelectionRawBounds()
-      if r1 == r2 then -- same line
-        return '<C-g>"_c<TAB>' -- (blackhole reg)
-      else -- different lines
-        return '<C-g>V>gv<C-g>'
-      end
-    elseif mode:match('[\19]') then -- Select-block (^S)
-      return '<C-g>V>gv<C-g>'
-    elseif mode:match('[S]') then -- Select-Line
-      return '<C-g>>gv<C-g>'
-    else
-      error(mode)
-    end
-  end,
-  { expr = true, desc = 'Indent' })
+  -- indent / dedent
 
-  vim.keymap.set('s', '<S-TAB>', function()
+  vim.keymap.set('i', '<M-RIGHT>', function()
+    sendKeys('<C-\\><C-o>V<C-g>', 'n') -- at first switch to Select-Line
+  end,
+  { expr = false })
+
+  vim.keymap.set('i', '<M-LEFT>', function()
+    sendKeys('<C-\\><C-o>V<C-g>', 'n') -- at first switch to Select-Line
+  end)
+
+  -- move selection one col backward or forward, or indent / dedent
+
+  vim.keymap.set('s', '<M-RIGHT>', function()
     local mode = vim.fn.mode()
     if mode:match('[s]') then -- Select
       r1, _, r2, _ = getSelectionRawBounds()
       if r1 == r2 then -- same line
-        return nil
+        rmbMoveSelRight()
       else -- different lines
-        return '<C-g>V<gv<C-g>'
+        sendKeys('<C-g>V<C-g>', 'n') -- at first switch to Select-Line
       end
-    elseif mode:match('[s\19]') then -- Select-block (^S)
-      return '<C-g>V<gv<C-g>'
     elseif mode:match('[S]') then -- Select-Line
-      return '<C-g><gv<C-g>'
+      sendKeys('<C-g>>gv<C-g>', 'n')
+    elseif mode:match('[\19]') then -- Select-block (^S)
+      return nil
     else
       error(mode)
     end
-  end,
-  { expr = true, desc = 'Dedent' })
+  end)
+
+  vim.keymap.set('s', '<M-LEFT>', function()
+    local mode = vim.fn.mode()
+    if mode:match('[s]') then -- Select
+      r1, _, r2, _ = getSelectionRawBounds()
+      if r1 == r2 then -- same line
+        rmbMoveSelLeft()
+      else -- different lines
+        sendKeys('<C-g>V<C-g>', 'n') -- at first switch to Select-Line
+      end
+    elseif mode:match('[S]') then -- Select-Line
+      sendKeys('<C-g><gv<C-g>', 'n')
+    elseif mode:match('[\19]') then -- Select-block (^S)
+      return nil
+    else
+      error(mode)
+    end
+  end)
+
+  for k, f in pairs({
+    ['<C-M-LEFT>'] = rmbMoveSelCLeft, -- move selection one word backward
+    ['<C-M-RIGHT>'] = rmbMoveSelCRight_cfg, -- move selection one word forward
+    ['<M-HOME>'] = rmbMoveSelHome, -- move selection to BOL
+    ['<M-END>'] = rmbMoveSelEnd, -- move selection to EOL
+    }) do
+    vim.keymap.set('s', k, function()
+      local mode = vim.fn.mode()
+      if mode:match('[s]') then -- Select
+        r1, _, r2, _ = getSelectionRawBounds()
+        if r1 == r2 then -- same line
+          f()
+        else -- different lines
+          return nil
+        end
+      elseif mode:match('[S]') then -- Select-Line
+        return nil
+      elseif mode:match('[\19]') then -- Select-block (^S)
+        return nil
+      else
+        error(mode)
+      end
+    end)
+  end
+
+  for k, f in pairs({
+    ['<C-M-UP>'] = rmbMoveSelCUp, -- move sel to prev par
+    ['<C-M-DOWN>'] = rmbMoveSelCDown, -- move sel to next par
+    ['<M-PAGEUP>'] = rmbMoveSelPageUp, -- move sel to prev page
+    ['<M-PAGEDOWN>'] = rmbMoveSelPageDown, -- move sel to next page
+    ['<C-M-HOME>'] = rmbMoveSelCHome, -- move sel to BOF
+    ['<C-M-END>'] = rmbMoveSelCEnd, -- move sel to EOF
+    }) do
+    vim.keymap.set('s', k, function()
+      local mode = vim.fn.mode()
+      if mode:match('[s]') then -- Select
+        r1, _, r2, _ = getSelectionRawBounds()
+        if r1 == r2 then -- same line
+          f()
+        else -- different lines
+          sendKeys('<C-g>V<C-g>', 'n') -- at first switch to Select-Line
+        end
+      elseif mode:match('[S]') then -- Select-Line
+        error('not implemented')
+      elseif mode:match('[\19]') then -- Select-block (^S)
+        return nil
+      else
+        error(mode)
+      end
+    end)
+  end
 
   -- Operations ----------------------------------------------------------------
 
   -- Select mode: Copy to { ", rambo_register_lines }
-  vim.keymap.set('s', '<C-c>', rmbCopy)
+  vim.keymap.set('s', cfg.op_prefix .. '<C-c>', rmbCopy)
 
   -- Select mode: Cut to { ", rambo_register_lines }
-  vim.keymap.set('s', '<C-x>', rmbCut)
+  vim.keymap.set('s', cfg.op_prefix .. '<C-x>', rmbCut)
 
   -- Select mode: Paste from rambo_register_lines
-  vim.keymap.set('s', '<C-v>', function() rmbPaste('select') end)
+  vim.keymap.set('s', cfg.op_prefix .. '<C-v>', function() rmbPaste('select') end)
 
-  -- Insert mode: Copy -> No Op.
-  vim.keymap.set('i', '<C-c>', '<NOP>')
+  -- -- Insert mode: Copy -> No Op.
+  -- vim.keymap.set('i', cfg.op_prefix .. '<C-c>', '<NOP>')
 
-  -- Insert mode: Cut -> No Op.
-  vim.keymap.set('i', '<C-x>', '<NOP>')
+  -- -- Insert mode: Cut -> No Op.
+  -- vim.keymap.set('i', '<C-x>', '<NOP>')
 
   -- Insert mode: Paste from rambo_register_lines
-  vim.keymap.set('i', '<C-v>', function() rmbPaste('insert') end)
+  vim.keymap.set('i', cfg.op_prefix .. '<C-v>', function() rmbPaste('insert') end)
 
   -- Save in Insert/Select
-  vim.keymap.set('i', '<C-s>', save)
-  vim.keymap.set('s', '<C-s>', save)
+  vim.keymap.set('i', cfg.op_prefix .. '<C-s>', save)
+  vim.keymap.set('s', cfg.op_prefix .. '<C-s>', save)
 
   -- Undo in Insert/Select
-  vim.keymap.set('i', '<C-z>', '<C-o>u')
-  vim.keymap.set('s', '<C-z>', '<ESC>ui')
+  vim.keymap.set('i', cfg.op_prefix .. '<C-z>', '<C-o>u')
+  vim.keymap.set('s', cfg.op_prefix .. '<C-z>', '<ESC>ui')
+
   -- Redo in Insert/Select
   -- commented because C-Z doesn't work
   -- vim.keymap.set('i', '<C-Z>', '<C-o><C-r>')
   -- vim.keymap.set('s', '<C-Z>', '<ESC><C-r>i')
-  -- Warning! It overrides i_CTRL-Y
-  vim.keymap.set('i', '<C-y>', '<C-o><C-r>')
-  vim.keymap.set('s', '<C-y>', '<ESC><C-r>i')
+  vim.keymap.set('i', cfg.op_prefix .. '<C-y>', '<C-o><C-r>')
+  vim.keymap.set('s', cfg.op_prefix .. '<C-y>', '<ESC><C-r>i')
 
   -- Select all
-  vim.keymap.set('i', '<C-a>', function()
-    rmbMotionCHome()
-    sendKeys('<C-o>v<C-g>', 'n')
-    vim.schedule(rmbMotionCEnd)
+  vim.keymap.set('i', cfg.op_prefix .. '<C-a>', function()
+    sendKeys('<ESC>gg0i<C-\\><C-o>vG$<C-g>', 'n')
+  end)
+
+  vim.keymap.set('s', cfg.op_prefix .. '<C-a>', function()
+    sendKeys('<ESC><ESC>gg0i<C-\\><C-o>vG$<C-g>', 'n')
   end)
 
   -- Search in Insert mode
-  vim.keymap.set('i', '<C-f>', '<C-o>/')
+  vim.keymap.set('i', cfg.op_prefix .. '<C-f>', '<C-o>/')
 
   -- F3 / F4 and S-F3 for jump between search results
   -- vim.keymap.set({'i', 's'}, '<F3>',  '<C-o>n')
@@ -1049,7 +1239,7 @@ function M.setup(cfg)
   vim.keymap.set({'n', 'i', 's'}, '<F4>',  '<cmd>:nohl<CR>')
 
   -- Search text under Selection
-  vim.keymap.set('s', '<C-f>', function()
+  vim.keymap.set('s', cfg.op_prefix .. '<C-f>', function()
     sendKeys('<C-g>', 'n')
     vim.schedule(function() sendKeys('*', 'n') end)
   end)
