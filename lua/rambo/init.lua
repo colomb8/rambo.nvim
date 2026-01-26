@@ -17,8 +17,11 @@ local M = {}
 function M.setup(user_opts)
 
   local config = vim.tbl_deep_extend("force", {
-    c_right_mode = 'bow',
-    op_prefix = '<C-z>',
+    c_right_mode = 'bow', -- 'bow' or 'eow'
+    op_prefix = '', -- '' or '<C-q>' or '<C-g>'
+    hl_select_spec = { -- hl_spec or false
+      bg = '#732BF5', -- Neon Violet
+    },
   },
   user_opts or {})
 

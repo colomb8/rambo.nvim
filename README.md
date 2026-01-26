@@ -9,6 +9,7 @@ A Neovim plugin that supercharges Insert Mode with modern editing behavior.
 
 - **Normal Mode**: Stay true to Vim, maintain your Vim proficiency and benefit from its full power. Use `hjkl` and all of Vim's native keybindings.
 - **Insert Mode**: Becomes fluid, intuitive, and modern (like Sublime Text, Notepad++, or other contemporary editors). Use `← ↓ ↑ →` , `Ctrl` for jumps, `Shift` for selections, plus *motion helpers* like `Home`, `End`, `PageUp`, `PageDown`.
+In addition, Rambo provides advanced moving features triggered with `Meta (Alt)`.
 
 The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it ideal for lightweight, quick and (perhaps not-so) dirty edits without ever leaving it.
 
@@ -21,66 +22,43 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it id
 - Friendly even for non-coding workflows - ideal for quick edits, note-taking and general text manipulation.
 - All this, without compromising Vim's philosophy.
 
-## Features
-
 **Outside Insert Mode, everything behaves as expected.**
 **Inside Insert Mode, you get enhanced with modern editing capabilities:**
 
+## Features
+
+### Move Cursor
+
+- **Fast cursor movement** with `Ctrl` + `←` and `→` (similar to Vim's `b` and `e` but enhanced) Notes: (1) it relies on what set in `vim.opt.iskeyword`; (2) The `Ctrl-Right` motion is available in two variants, depending on the configuration.
+- **Jump between paragraphs** with `Ctrl` + `↓` and `↑` (same as vim's `{` and `}`).
+### Select Text
+
 - **Text selection** using `Shift` + `Arrow Keys`.
 - When a selection is active, **typing replaces the selection** - as in any modern editor.
-- **Fast cursor movement** with `Ctrl` + `←` and `→` (similar to Vim's `b` and `e` but enhanced) Notes: (1) it relies on what set in `vim.opt.iskeyword`; (2) The `C-Right` motion is available in two variants, depending on the configuration.
-- **Jump between paragraphs** with `Ctrl` + `↓` and `↑` (same as vim's `{` and `}`).
 - **Word-wise selection** with `Ctrl` + `Shift` + `Arrow Keys`.
 - Full support for `Home`, `End`, `Page Up`, and `Page Down`.
-  `Ctrl` + `Home` jumps to the beginning of the file, `Ctrl` + `End` to the end. Obviously, they can combined with `Shift` for Select mode.
-- **Copy/Cut/Paste op.**: `Ctrl` + `C`, `Ctrl` + `V`, and `Ctrl` + `X` for copy, paste, and cut - fully compatible with the **system clipboard**. Note: these operations rely on a *rambo register* which smartly interacts with Vim registers. For example, replacing selected text by typing new content does not affect the Rambo register.
-- **Wrapping utilities**: after selecting text, press a character like `)` to wrap it in parentheses — the **selection remains active**, allowing for quick chained operations. For example, pressing `)` followed by `"` results in `("ciao")`.
-- **Search navigation** with `F3` and `F2`. Press `F4` to exit highlight mode (if enabled).
-- `Ctrl + F` opens the search prompt. If text is selected, it is used as the search query.
-- **Undo/Redo** with `Ctrl + Z` and `Ctrl + Y`. Note: it's reccomanded to set undo breakpoints in insert mode for a better experience.
-- **Move lines up/down** with `Alt + ↑ / ↓`. Works on single or multiple selected lines.
-- While selecting one or more lines, use `Tab` and `Shift` + `Tab` to **indent or dedent**.
+- `Ctrl` + `Home` jumps to the beginning of the file, `Ctrl` + `End` to the end. Obviously, they can combined with `Shift` for Select mode.
 - `Ctrl` + `a` for select all.
 - `Shift` + `space` for toggle Select <-> S-Line.
-- `Insert` key allows to quickly switch between Select and Visual mode (it is also handy to enter insert mode when in normal).
-- `Meta (Alt)` + `Shift` + `↑ / ↓` for scroll window.
+
+### Operations
+- **Copy/Cut/Paste op.**: `Ctrl` + `C`, `Ctrl` + `V`, and `Ctrl` + `X` for copy, paste, and cut - fully compatible with the **system clipboard**. Note: these operations rely on a *internal register* which smartly interacts with Vim registers. For example, replacing selected text by typing new content does not affect the Rambo register.
 - `Ctrl-s` for save current file.
 
+### Wrapping
+- **Wrapping utilities**: after selecting text, press a character like `)` to wrap it in parentheses — the **selection remains active**, allowing for quick chained operations. For example, pressing `)` followed by `"` results in `("ciao")`.
 
-## Tips
+### Search text
+- In insert mode, `Ctrl + F` opens the search prompt. If **text is selected**, it is used as the search query.
+- Navigate results with `F3` and `F2`. Press `F4` to exit highlight mode (if enabled).
 
-- Set undo breakpoints in insert mode with:
+- **Undo/Redo** with `Ctrl + Z` and `Ctrl + Y`. Note: it's reccomanded to set undo breakpoints in insert mode for a better experience. See Tips in README or documentation.
 
-```lua
-for _, char in ipairs({ ",", ".", ";", " " }) do
-  vim.keymap.set("i", char, char .. "<C-g>u")
-end
-```
-
-- Set different highlights to Visual vs Select mode with:
-
-```lua
-local bg_visual = '#004D8A'
-local bg_select =  '#732BF5'
-vim.api.nvim_create_autocmd("ModeChanged", {
-  pattern = "*:[vV\22]*",
-  callback = function(args)
-      vim.api.nvim_set_hl(0, 'Visual', {
-        bg = bg_visual,
-        -- fg = '#FFFFFF',
-      })
-  end
-})
-vim.api.nvim_create_autocmd("ModeChanged", {
-  pattern = "*:[sS\19]*",
-  callback = function(args)
-      vim.api.nvim_set_hl(0, 'Visual', {
-        bg = bg_select,
-        -- fg = '#FFFFFF',
-      })
-  end
-})
-```
+### Moving Text
+- **Move lines up/down** with `Alt + ↑ / ↓`. Works on single or multiple selected lines.
+- While selecting one or more lines, use `Tab` and `Shift` + `Tab` to **indent or dedent**.
+- `Insert` key allows to quickly switch between Select and Visual mode (it is also handy to enter insert mode when in normal).
+- `Meta (Alt)` + `Shift` + `↑ / ↓` for scroll window.
 
 ## Installation and Configuration
 
@@ -92,6 +70,10 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
   config = function()
     require("rambo").setup({
       -- c_right_mode = 'bow', -- 'bow' or 'eow'
+      -- op_prefix = '', -- '' or '<C-q>' or '<C-g>'
+      -- hl_select_spec = { -- hl_spec or false
+      --   bg = '#732BF5', -- Neon Violet
+      -- },
     })
   end,
 },
@@ -101,15 +83,25 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
 
 Configuration:
 - `c_right_mode`: controls how the `C-Right` motion behaves. With `bow` the cursor jumps to the begining of next word. With `eow` the cursor jumps to the end of next word. Default is `bow`.
+- `op_prefix`: it specifies a prefix for operations like Copy, Cut, Paste, Save, etc. As an example, if `op_prefix` is empty string, user can copy selection with `<C-c>`; if otherwise `op_prefix` is `<C-q>`, the operation of copy is achieved with `<C-q>c`. Default is empty string.
+- `hl_select_spec`: it specifies a formatting for selected area; default is `#732BF5` (Neon Violet).
+
+## Tips
+
+- For a better experience in using undo/redo in Rambo, set undo breakpoints in insert mode with:
+
+```lua
+for _, char in ipairs({ "<CR>", ",", ".", ";", " " }) do
+  vim.keymap.set("i", char, char .. "<C-g>u")
+end
+```
 
 ## Roadmap
 
 - `:help` Vim documentation – provide Vim help file (`:help rambo`) for discoverability.
-- Horizontal move when selection is on one line only (like matze/vim-move)
-- In case of line wrap, Up/Down should follow virtual text (like `gj` and `gk`).
-- Plugin custom configuration – allow users to customize some key mappings and behavior via `setup`.
-- Unicode support – extend compatibility beyond ASCII for smooth editing also in international contexts.
+- Full unicode support – extend compatibility beyond ASCII for smooth editing also in international contexts.
 - Simple multicursor support – implement basic but handy multicursor editing.
+- Home, End, Up, Down should support line wrap.
 
 ## License
 
