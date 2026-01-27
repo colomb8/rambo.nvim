@@ -1109,7 +1109,7 @@ function M.setup(cfg)
     ['<C-S-HOME>'] = rmbMotionCHome,
     ['<S-PAGEUP>'] = rmbMotionPageUp,
     }) do
-             --
+    --
     vim.keymap.set('i', k, function()
       if vim.fn.col('.') == 1 and vim.fn.line('.') == 1 -- BOF
         then return end
