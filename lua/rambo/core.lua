@@ -5,7 +5,7 @@ Rambo.nvim
 
 Author: Dario Colombotto
   email: dario.colombotto@outlook.com
-  Telegram: https://t.me/colomb11
+  Telegram: https://t.me/colomb8
 
 License: MIT (see LICENSE)
 
@@ -300,11 +300,11 @@ end
 -- Rambo.nvim Variables
 ------------------------------------------------------------------------------
 
-local rambo_register_lines
+local rambo_register_lines = nil
 
 local insert_special = false
 
-local selection_original_value = vim.o.selection
+local opt_selection_original_value = vim.o.selection
 
 local M = {}
 
@@ -320,17 +320,7 @@ vim.api.nvim_create_autocmd("ModeChanged", {
   end,
 })
 
-vim.api.nvim_create_autocmd("InsertEnter", {
-  callback = function()
-    vim.o.selection = selection_original_value
-    insert_special = false
-    rambo_register_lines = nil
-      or rambo_register_lines
-      or splitStr(vim.fn.getreg('"'), '\n')
-      or splitStr(vim.fn.getreg('+'), '\n')
-  end,
-})
-
+-- update rambo internal register on yank
 vim.api.nvim_create_autocmd("TextYankPost", { -- yank or delete
   -- from documentation: "TextYankPost Just after a yank or deleting command,
   -- but not if the black hole register quote_ is used nor for setreg()"
@@ -340,6 +330,31 @@ vim.api.nvim_create_autocmd("TextYankPost", { -- yank or delete
     if mode ~= 'niI' then -- exclude Select-Insert
       rambo_register_lines = splitStr(vim.fn.getreg('"'), '\n')
     end
+  end,
+})
+
+-- restore " and + registers if Select while typing
+vim.api.nvim_create_autocmd("ModeChanged", {
+  pattern = "*[sS\19]:niI",
+  callback = function()
+    local tmp = table.concat(rambo_register_lines or {}, '\n')
+    vim.fn.setreg('*', tmp, 'c')
+    vim.fn.setreg('"', tmp, 'c')
+    vim.fn.setreg('+', tmp, 'c')
+    vim.fn.setreg('0', tmp, 'c')
+  end,
+})
+
+vim.api.nvim_create_autocmd("InsertEnter", {
+  callback = function()
+    vim.o.selection = opt_selection_original_value
+    insert_special = false
+    rambo_register_lines = nil
+      or rambo_register_lines
+      or splitStr(vim.fn.getreg('*'), '\n')
+      or splitStr(vim.fn.getreg('"'), '\n')
+      or splitStr(vim.fn.getreg('+'), '\n')
+      or splitStr(vim.fn.getreg('0'), '\n')
   end,
 })
 
@@ -790,8 +805,10 @@ local function rmbCopy(opts)
   end
   rambo_register_lines =  getTextFromBounds(r1, c1, r2, c2)
   local tmp = table.concat(rambo_register_lines, '\n')
+  vim.fn.setreg('*', tmp, 'c')
   vim.fn.setreg('"', tmp, 'c')
   vim.fn.setreg('+', tmp, 'c')
+  vim.fn.setreg('0', tmp, 'c')
   --
   blinkText({
     ['buffer'] = 0,
@@ -817,8 +834,10 @@ local function rmbCut(opts)
   end
   rambo_register_lines = getTextFromBounds(r1, c1, r2, c2)
   local tmp = table.concat(rambo_register_lines, '\n')
+  vim.fn.setreg('*', tmp, 'c')
   vim.fn.setreg('"', tmp, 'c')
   vim.fn.setreg('+', tmp, 'c')
+  vim.fn.setreg('0', tmp, 'c')
   sendKeys('<ESC>', 'n')
   deleteText(r1, c1, r2, c2)
 end
@@ -1007,7 +1026,7 @@ function M.setup(cfg)
   -- Setup color of Select mode -----------------------------------------------------
 
   if cfg.hl_select_spec then
-    local group = vim.api.nvim_create_augroup("RamboSelectHL", { clear = true })
+    local hl_group = vim.api.nvim_create_augroup("RamboSelectHL", { clear = true })
 
     local function get_visual_hl()
       return vim.api.nvim_get_hl(0, { name = "Visual", link = true })
@@ -1026,7 +1045,7 @@ function M.setup(cfg)
     local in_select = false
 
     vim.api.nvim_create_autocmd("ModeChanged", {
-      group = group,
+      group = hl_group,
       pattern = "*:[sS\19]*",
       callback = function()
         if in_select then return end
@@ -1037,7 +1056,7 @@ function M.setup(cfg)
     })
 
     vim.api.nvim_create_autocmd("ModeChanged", {
-      group = group,
+      group = hl_group,
       pattern = "[sS\19]*:*",
       callback = function()
         if not in_select then return end
@@ -1048,7 +1067,7 @@ function M.setup(cfg)
     })
 
     vim.api.nvim_create_autocmd("ColorScheme", {
-      group = group,
+      group = hl_group,
       callback = function()
         if not in_select then return end
         hl_visual_orig = get_visual_hl()
@@ -1503,22 +1522,21 @@ function M.setup(cfg)
     end
   end)
 
-  -- Toggle Select <-> Select Line
-  vim.keymap.set('s', '<S-SPACE>', function()
-    local mode = vim.fn.mode()
-    if insert_special then
-      if mode:match('[S]') then -- Select-Line
-        sendKeys('<C-g>v<C-g>', 'n')
-      else -- select or select block
-        sendKeys('<C-g>V<C-g>', 'n')
-      end
-    else
-      sendKeys('<C-l>', 'n')
-    end
-  end)
-
-  -- Enable Select-Line in insert mode
-  -- vim.keymap.set('i', '<S-SPACE>', '<C-\\><C-o>V<C-g>')
+  -- S-SPACE not always captured
+  -- use M-something instead
+  -- -- Toggle Select <-> Select Line
+  -- vim.keymap.set('s', '<S-SPACE>', function()
+  --   local mode = vim.fn.mode()
+  --   if insert_special then
+  --     if mode:match('[S]') then -- Select-Line
+  --       sendKeys('<C-g>v<C-g>', 'n')
+  --     else -- select or select block
+  --       sendKeys('<C-g>V<C-g>', 'n')
+  --     end
+  --   else
+  --     sendKeys('<C-l>', 'n')
+  --   end
+  -- end)
 
   -- Wrapping utilities: (), [], {}, "", '', <>
   for _, wrap_spec in pairs({
