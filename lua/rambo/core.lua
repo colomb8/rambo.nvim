@@ -349,12 +349,6 @@ vim.api.nvim_create_autocmd("InsertEnter", {
   callback = function()
     vim.o.selection = opt_selection_original_value
     insert_special = false
-    rambo_register_lines = nil
-      or rambo_register_lines
-      or splitStr(vim.fn.getreg('*'), '\n')
-      or splitStr(vim.fn.getreg('"'), '\n')
-      or splitStr(vim.fn.getreg('+'), '\n')
-      or splitStr(vim.fn.getreg('0'), '\n')
   end,
 })
 
@@ -843,6 +837,12 @@ local function rmbCut(opts)
 end
 
 local function rmbPaste(opts)
+  rambo_register_lines = nil
+    or rambo_register_lines
+    or splitStr(vim.fn.getreg('*'), '\n')
+    or splitStr(vim.fn.getreg('"'), '\n')
+    or splitStr(vim.fn.getreg('+'), '\n')
+    or splitStr(vim.fn.getreg('0'), '\n')
   opts = opts or {}
   if opts['submode'] == 'insert' then
     local row = vim.fn.line('.')
