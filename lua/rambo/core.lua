@@ -1102,11 +1102,17 @@ function M.setup(cfg)
     ['<C-UP>'] = rmbMotionCUp,
     ['<C-DOWN>'] = rmbMotionCDown,
     ['<HOME>'] = rmbMotionHome,
+    ['<KHOME>'] = rmbMotionHome,
     ['<END>'] = rmbMotionEnd,
+    ['<KEND>'] = rmbMotionEnd,
     ['<C-HOME>'] = rmbMotionCHome,
+    ['<C-KHOME>'] = rmbMotionCHome,
     ['<C-END>'] = rmbMotionCEnd,
+    ['<C-KEND>'] = rmbMotionCEnd,
     ['<PAGEUP>'] = rmbMotionPageUp,
+    ['<KPAGEUP>'] = rmbMotionPageUp,
     ['<PAGEDOWN>'] = rmbMotionPageDown,
+    ['<KPAGEDOWN>'] = rmbMotionPageDown,
     }) do
     vim.keymap.set('i', k, function()
       if vim.fn.complete_info({ "pum_visible" }).pum_visible == 1 then
@@ -1125,8 +1131,11 @@ function M.setup(cfg)
     ['<C-S-LEFT>'] = rmbMotionCLeft,
     ['<C-S-UP>'] = rmbMotionCUp,
     -- ['<S-HOME>'] = rmbMotionHome,
+    -- ['<S-KHOME>'] = rmbMotionHome,
     ['<C-S-HOME>'] = rmbMotionCHome,
+    ['<C-S-KHOME>'] = rmbMotionCHome,
     ['<S-PAGEUP>'] = rmbMotionPageUp,
+    ['<S-KPAGEUP>'] = rmbMotionPageUp,
     }) do
     --
     vim.keymap.set('i', k, function()
@@ -1143,14 +1152,23 @@ function M.setup(cfg)
     vim.schedule(rmbMotionHome.move)
   end)
 
+  vim.keymap.set('i', '<S-KHOME>', function()
+    if vim.fn.col('.') == 1 then return end
+    sendKeys('<C-\\><C-o>v<C-g>', 'n')
+    vim.schedule(rmbMotionHome.move)
+  end)
+
   for k, f in pairs({
     ['<S-RIGHT>'] = rmbMotionRight,
     ['<S-DOWN>'] = rmbMotionDown,
     ['<C-S-RIGHT>'] = rmbMotionCRight_cfg,
     ['<C-S-DOWN>'] = rmbMotionCDown,
     -- ['<S-END>'] = rmbMotionEnd,
+    -- ['<S-KEND>'] = rmbMotionEnd,
     ['<C-S-END>'] = rmbMotionCEnd,
+    ['<C-S-KEND>'] = rmbMotionCEnd,
     ['<S-PAGEDOWN>'] = rmbMotionPageDown,
+    ['<S-KPAGEDOWN>'] = rmbMotionPageDown,
     }) do
     --
     vim.keymap.set('i', k, function()
@@ -1168,6 +1186,12 @@ function M.setup(cfg)
     vim.schedule(rmbMotionEnd.move)
   end)
 
+  vim.keymap.set('i', '<S-KEND>', function()
+    if vim.fn.col('.') == vim.fn.getline('.'):len() + 1 then return end
+    sendKeys('<C-\\><C-o>v<C-g>', 'n')
+    vim.schedule(rmbMotionEnd.move)
+  end)
+
   -- Changing selection --------------------------------------------------------
 
   for k, f in pairs({
@@ -1180,11 +1204,17 @@ function M.setup(cfg)
     ['<C-S-UP>'] = rmbMotionCUp,
     ['<C-S-DOWN>'] = rmbMotionCDown,
     ['<S-HOME>'] = rmbMotionHome,
+    ['<S-KHOME>'] = rmbMotionHome,
     ['<S-END>'] = rmbMotionEnd,
+    ['<S-KEND>'] = rmbMotionEnd,
     ['<C-S-HOME>'] = rmbMotionCHome,
+    ['<C-S-KHOME>'] = rmbMotionCHome,
     ['<C-S-END>'] = rmbMotionCEnd,
+    ['<C-S-KEND>'] = rmbMotionCEnd,
     ['<S-PAGEUP>'] = rmbMotionPageUp,
+    ['<S-KPAGEUP>'] = rmbMotionPageUp,
     ['<S-PAGEDOWN>'] = rmbMotionPageDown,
+    ['<S-KPAGEDOWN>'] = rmbMotionPageDown,
     }) do
     vim.keymap.set('s', k, f.move)
   end
@@ -1201,11 +1231,17 @@ function M.setup(cfg)
     ['<C-UP>'] = rmbMotionCUp,
     ['<C-DOWN>'] = rmbMotionCDown,
     ['<HOME>'] = rmbMotionHome,
+    ['<KHOME>'] = rmbMotionHome,
     ['<END>'] = rmbMotionEnd,
+    ['<KEND>'] = rmbMotionEnd,
     ['<C-HOME>'] = rmbMotionCHome,
+    ['<C-KHOME>'] = rmbMotionCHome,
     ['<C-END>'] = rmbMotionCEnd,
+    ['<C-KEND>'] = rmbMotionCEnd,
     ['<PAGEUP>'] = rmbMotionPageUp,
+    ['<KPAGEUP>'] = rmbMotionPageUp,
     ['<PAGEDOWN>'] = rmbMotionPageDown,
+    ['<KPAGEDOWN>'] = rmbMotionPageDown,
     }) do
     vim.keymap.set('s', k, function()
       sendKeys('<ESC>', 'n')
@@ -1223,17 +1259,25 @@ function M.setup(cfg)
     '<M-LEFT>',
     '<M-RIGHT>',
     '<M-HOME>',
+    '<M-KHOME>',
     '<M-END>',
+    '<M-KEND>',
     '<M-PAGEUP>',
+    '<M-KPAGEUP>',
     '<M-PAGEDOWN>',
+    '<M-KPAGEDOWN>',
     '<C-M-UP>',
     '<C-M-DOWN>',
     '<C-M-LEFT>',
     '<C-M-RIGHT>',
     '<C-M-HOME>',
+    '<C-M-KHOME>',
     '<C-M-END>',
+    '<C-M-KEND>',
     '<C-M-PAGEUP>',
+    '<C-M-KPAGEUP>',
     '<C-M-PAGEDOWN>',
+    '<C-M-KPAGEDOWN>',
   }) do
     vim.keymap.set('i', k, '<C-\\><C-o>V<C-g>')
   end
@@ -1316,7 +1360,9 @@ function M.setup(cfg)
     ['<C-M-LEFT>'] = rmbMoveSelCLeft, -- move selection one word backward
     ['<C-M-RIGHT>'] = rmbMoveSelCRight_cfg, -- move selection one word forward
     ['<M-HOME>'] = rmbMoveSelHome, -- move selection to BOL
+    ['<M-KHOME>'] = rmbMoveSelHome, -- move selection to BOL
     ['<M-END>'] = rmbMoveSelEnd, -- move selection to EOL
+    ['<M-KEND>'] = rmbMoveSelEnd, -- move selection to EOL
     }) do
     vim.keymap.set('s', k, function()
       local mode = vim.fn.mode()
@@ -1343,9 +1389,13 @@ function M.setup(cfg)
     ['<C-M-UP>'] = rmbMoveSelCUp, -- move sel to prev par
     ['<C-M-DOWN>'] = rmbMoveSelCDown, -- move sel to next par
     ['<M-PAGEUP>'] = rmbMoveSelPageUp, -- move sel to prev page
+    ['<M-KPAGEUP>'] = rmbMoveSelPageUp, -- move sel to prev page
     ['<M-PAGEDOWN>'] = rmbMoveSelPageDown, -- move sel to next page
+    ['<M-KPAGEDOWN>'] = rmbMoveSelPageDown, -- move sel to next page
     ['<C-M-HOME>'] = rmbMoveSelCHome, -- move sel to BOF
+    ['<C-M-KHOME>'] = rmbMoveSelCHome, -- move sel to BOF
     ['<C-M-END>'] = rmbMoveSelCEnd, -- move sel to EOF
+    ['<C-M-KEND>'] = rmbMoveSelCEnd, -- move sel to EOF
     }) do
     vim.keymap.set('s', k, function()
       local mode = vim.fn.mode()
