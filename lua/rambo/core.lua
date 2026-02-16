@@ -356,6 +356,29 @@ vim.api.nvim_create_autocmd("InsertEnter", {
 -- Rambo.nvim Functions
 ------------------------------------------------------------------------------
 
+local function getPrevCol(line, col)
+  -- inclusive
+  -- vim.regex uses vim.o.iskeyword !
+  col = col or 1
+  local left = line:sub(1, col - 1)
+  -- match the last UTF-8 char
+  local r = vim.regex(".$")
+  local from, _ = r:match_str(left)
+  return from and (from + 1) or nil
+end
+
+local function getNextCol(line, col)
+  -- inclusive
+  -- vim.regex uses vim.o.iskeyword !
+  col = col or 1
+  local r = vim.regex(""
+    .. "\\%" .. col .. "c"  -- Matches in a specific column
+    .. "."                  -- Matches 1 car UTF-8 safe
+  )
+  local _, to = r:match_str(line)
+  return to and to + 1
+end
+
 local function getFirstEndOfWord(line)
   -- inclusive
   -- vim.regex uses vim.o.iskeyword !
@@ -379,7 +402,7 @@ local function getNextBeginningOfWord(line)
   -- vim.regex uses vim.o.iskeyword !
   local r = vim.regex(""
     .. "\\("
-      -- kw or blank            , punct/symbol
+      -- kw or blank            ,  punct/symbol
     .. "[[:keyword:][:blank:]]" .. "[^[:keyword:][:blank:]]"
     .. "\\)"
     .. "\\|" -- or
@@ -409,6 +432,57 @@ local function getFirstBeginningOfWord(line)
   local _, to = r:match_str(" " .. line) -- <--
   return to and to - 1
 end
+
+local rmbMotionLeft = {
+  dir = -1,
+  move = function()
+    local col = vim.fn.col('.')
+    local row = vim.fn.line('.')
+    --
+    local row_target
+    local col_target
+    if col == 1 then
+      if row == 1 then
+        return nil
+      else
+        row_target = row - 1
+        col_target = vim.fn.getline(row - 1):len() + 1
+      end
+    else
+      row_target = row
+      local line = vim.fn.getline('.')
+      col_target = getPrevCol(line, col)
+      -- col_target = col - 1
+    end
+    setCursor(row_target, col_target)
+  end
+}
+
+local rmbMotionRight = {
+  dir = 1,
+  move = function()
+    local col = vim.fn.col('.')
+    local row = vim.fn.line('.')
+    local line_len = vim.fn.getline('.'):len()
+    local row_last = vim.fn.line('$')
+    --
+    local row_target = row
+    local col_target
+    if col <= line_len then
+        local line = vim.fn.getline('.')
+        col_target = getNextCol(line, col)
+        -- col_target = col + 1
+    else -- col > line_end (onemore)
+      if row == row_last then
+        return nil
+      else
+        row_target = row + 1
+        col_target = 1
+      end
+    end
+    setCursor(row_target, col_target)
+  end
+}
 
 local rmbMotionCLeft = {
   dir = -1,
@@ -517,53 +591,6 @@ local rmbMotionEnd = {
       return nil
     else
       col_target = line_len + 1
-    end
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionLeft = {
-  dir = -1,
-  move = function()
-    local col = vim.fn.col('.')
-    local row = vim.fn.line('.')
-    --
-    local row_target
-    local col_target
-    if col == 1 then
-      if row == 1 then
-        return nil
-      else
-        row_target = row - 1
-        col_target = vim.fn.getline(row - 1):len() + 1
-      end
-    else
-      row_target = row
-      col_target = col - 1
-    end
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionRight = {
-  dir = 1,
-  move = function()
-    local col = vim.fn.col('.')
-    local row = vim.fn.line('.')
-    local line_len = vim.fn.getline('.'):len()
-    local row_last = vim.fn.line('$')
-    --
-    local row_target = row
-    local col_target
-    if col <= line_len then
-        col_target = col + 1
-    else -- col > line_end (onemore)
-      if row == row_last then
-        return nil
-      else
-        row_target = row + 1
-        col_target = 1
-      end
     end
     setCursor(row_target, col_target)
   end

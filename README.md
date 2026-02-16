@@ -99,9 +99,8 @@ end
 ## Roadmap
 
 - `:help` Vim documentation – provide Vim help file (`:help rambo`) for discoverability.
-- Full unicode support – extend compatibility beyond ASCII for smooth editing also in international contexts.
-- Simple multicursor support – implement basic but handy multicursor editing.
 - Home, End, Up, Down should support line wrap.
+- Simple multicursor support – implement basic but handy multicursor editing.
 
 ## License
 
