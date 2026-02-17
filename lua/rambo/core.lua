@@ -339,8 +339,8 @@ vim.api.nvim_create_autocmd("ModeChanged", {
   callback = function()
     local tmp = table.concat(rambo_register_lines or {}, '\n')
     vim.fn.setreg('*', tmp, 'c')
-    vim.fn.setreg('"', tmp, 'c')
     vim.fn.setreg('+', tmp, 'c')
+    vim.fn.setreg('"', tmp, 'c')
     vim.fn.setreg('0', tmp, 'c')
   end,
 })
@@ -827,8 +827,8 @@ local function rmbCopy(opts)
   rambo_register_lines =  getTextFromBounds(r1, c1, r2, c2)
   local tmp = table.concat(rambo_register_lines, '\n')
   vim.fn.setreg('*', tmp, 'c')
-  vim.fn.setreg('"', tmp, 'c')
   vim.fn.setreg('+', tmp, 'c')
+  vim.fn.setreg('"', tmp, 'c')
   vim.fn.setreg('0', tmp, 'c')
   --
   blinkText({
@@ -857,8 +857,8 @@ local function rmbCut(opts)
   rambo_register_lines = getTextFromBounds(r1, c1, r2, c2)
   local tmp = table.concat(rambo_register_lines, '\n')
   vim.fn.setreg('*', tmp, 'c')
-  vim.fn.setreg('"', tmp, 'c')
   vim.fn.setreg('+', tmp, 'c')
+  vim.fn.setreg('"', tmp, 'c')
   vim.fn.setreg('0', tmp, 'c')
   sendKeys('<ESC>', 'n')
   if opts['is_lines'] then
@@ -873,8 +873,8 @@ local function rmbPaste(opts)
   rambo_register_lines = nil
     or rambo_register_lines
     or splitStr(vim.fn.getreg('*'), '\n')
-    or splitStr(vim.fn.getreg('"'), '\n')
     or splitStr(vim.fn.getreg('+'), '\n')
+    or splitStr(vim.fn.getreg('"'), '\n')
     or splitStr(vim.fn.getreg('0'), '\n')
   opts = opts or {}
   if opts['submode'] == 'insert' then
