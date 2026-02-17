@@ -9,6 +9,8 @@ A Neovim plugin that supercharges Insert Mode with modern editing behavior.
   </a>
 </p>
 
+---
+
 <p align="center">
   <img 
     src="media/Rambo-1200x900.jpg"
