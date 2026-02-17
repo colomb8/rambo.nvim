@@ -1,6 +1,9 @@
 # rambo.nvim - insert mode with no mercy
 
 A Neovim plugin that supercharges Insert Mode with modern editing behavior.
+
+[Watch a non-exhaustive showcase here](https://youtu.be/wFWhylX3-Vc)
+
 <p align="center"><img src="media/Rambo-1200x900.jpg" alt="insert mode with no mercy" width="300"/></p>
 
 >Image used under fair use, for illustrative and non-commercial purposes. All rights to the character and image belong to their respective owners.
@@ -29,8 +32,10 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it id
 
 ### Move Cursor
 
-- **Fast cursor movement** with `Ctrl` + `←` and `→` (similar to Vim's `b` and `e` but enhanced) Notes: (1) it relies on what set in `vim.opt.iskeyword`; (2) The `Ctrl-Right` motion is available in two variants, depending on the configuration.
+- **Jump between words** with `Ctrl` + `→` and `←` (same as vim's `w` and `e`, but the specific behavior can be configured in setup).
 - **Jump between paragraphs** with `Ctrl` + `↓` and `↑` (same as vim's `{` and `}`).
+- Full support for `Home`, `End`, `Page Up`, and `Page Down`.
+
 ### Select Text
 
 - **Text selection** using `Shift` + `Arrow Keys`.
@@ -41,23 +46,30 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it id
 - `Ctrl` + `a` for select all.
 - `Shift` + `space` for toggle Select <-> S-Line.
 
+### Moving Text
+
+- **Move lines up/down** with `Alt + ↑ / ↓`. Works on single or multiple selected lines.
+- Move operation can be done also with `Ctrl`, `Home`, `End`, `Page Up`, `Page Down` allowing to move text with the powerful jumps available.
+- While selecting one or more lines, use `→` and `←` to **indent or dedent**.
+- `Insert` key allows to quickly switch between Select and Visual mode (it is also handy to enter insert mode when in normal).
+
+### Wrapping
+
+- **Wrapping utilities**: after selecting text, press a character like `)` to wrap it in parentheses — the **selection remains active**, allowing for quick chained operations. For example, pressing `)` followed by `"` results in `("ciao")`.
+
 ### Operations
+
 - **Copy/Cut/Paste op.**: `Ctrl` + `C`, `Ctrl` + `V`, and `Ctrl` + `X` for copy, paste, and cut - fully compatible with the **system clipboard**. Note: these operations rely on a *internal register* which smartly interacts with Vim registers. For example, replacing selected text by typing new content does not affect the Rambo register.
 - `Ctrl-s` for save current file.
 
-### Wrapping
-- **Wrapping utilities**: after selecting text, press a character like `)` to wrap it in parentheses — the **selection remains active**, allowing for quick chained operations. For example, pressing `)` followed by `"` results in `("ciao")`.
-
 ### Search text
+
 - In insert mode, `Ctrl + F` opens the search prompt. If **text is selected**, it is used as the search query.
 - Navigate results with `F3` and `F2`. Press `F4` to exit highlight mode (if enabled).
-
 - **Undo/Redo** with `Ctrl + Z` and `Ctrl + Y`. Note: it's reccomanded to set undo breakpoints in insert mode for a better experience. See Tips in README or documentation.
 
-### Moving Text
-- **Move lines up/down** with `Alt + ↑ / ↓`. Works on single or multiple selected lines.
-- While selecting one or more lines, use `Tab` and `Shift` + `Tab` to **indent or dedent**.
-- `Insert` key allows to quickly switch between Select and Visual mode (it is also handy to enter insert mode when in normal).
+### Other
+
 - `Meta (Alt)` + `Shift` + `↑ / ↓` for scroll window.
 
 ## Installation and Configuration
@@ -69,7 +81,7 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
   "colomb8/rambo.nvim",
   config = function()
     require("rambo").setup({
-      -- c_right_mode = 'bow', -- 'bow' or 'eow'
+      -- c_right_mode = 'eow', -- 'eow' or 'bow'
       -- op_prefix = '', -- '' or '<C-q>' or '<C-g>'
       -- hl_select_spec = { -- hl_spec or false
       --   bg = '#732BF5', -- Neon Violet
@@ -82,7 +94,7 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
 >setup() is required - call it without arguments to use the default behavior.
 
 Configuration:
-- `c_right_mode`: controls how the `C-Right` motion behaves. With `bow` the cursor jumps to the begining of next word. With `eow` the cursor jumps to the end of next word. Default is `bow`.
+- `c_right_mode`: controls how the `C-Right` motion behaves. With `bow` the cursor jumps to the begining of next word. With `eow` the cursor jumps to the end of next word. Default is `eow`.
 - `op_prefix`: it specifies a prefix for operations like Copy, Cut, Paste, Save, etc. As an example, if `op_prefix` is empty string, user can copy selection with `<C-c>`; if otherwise `op_prefix` is `<C-q>`, the operation of copy is achieved with `<C-q>c`. Default is empty string.
 - `hl_select_spec`: it specifies a formatting for selected area; default is `#732BF5` (Neon Violet).
 

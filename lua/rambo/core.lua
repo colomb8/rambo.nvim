@@ -848,10 +848,11 @@ end
 local function rmbCut(opts)
   opts = opts or {}
   local r1, c1, r2, c2, _ = getSelectionBoundsAndDirection()
-  if r1 == r2 and c1 == c2 + 1 then return nil end
   if opts['is_lines'] then
     c1 = 1
     c2 = vim.fn.getline(r2):len()
+  else
+    if r1 == r2 and c1 == c2 + 1 then return nil end
   end
   rambo_register_lines = getTextFromBounds(r1, c1, r2, c2)
   local tmp = table.concat(rambo_register_lines, '\n')
@@ -860,7 +861,12 @@ local function rmbCut(opts)
   vim.fn.setreg('+', tmp, 'c')
   vim.fn.setreg('0', tmp, 'c')
   sendKeys('<ESC>', 'n')
-  deleteText(r1, c1, r2, c2)
+  if opts['is_lines'] then
+    deleteLines(r1, r2)
+    setCursor(r1, 1)
+  else
+    deleteText(r1, c1, r2, c2)
+  end
 end
 
 local function rmbPaste(opts)
@@ -1306,7 +1312,7 @@ function M.setup(cfg)
     '<C-M-PAGEDOWN>',
     '<C-M-KPAGEDOWN>',
   }) do
-    vim.keymap.set('i', k, '<C-\\><C-o>V<C-g>')
+    vim.keymap.set('i', k, '<C-\\><C-o>V0<C-g>')
   end
 
   -- move selection one col backward or forward, or indent / dedent
@@ -1318,7 +1324,7 @@ function M.setup(cfg)
       if r1 == r2 then -- same line
         rmbMoveSelLeft({ submode = 's' })
       else -- different lines
-        sendKeys('<C-g>V<C-g>', 'n') -- at first switch to Select-Line
+        sendKeys('<C-g>V0<C-g>', 'n') -- at first switch to Select-Line
       end
     elseif mode:match('[S]') then -- Select-Line
       sendKeys('<C-g><gv<C-g>', 'n')
@@ -1335,7 +1341,7 @@ function M.setup(cfg)
       if r1 == r2 then -- same line
         rmbMoveSelRight({ submode = 's' })
       else -- different lines
-        sendKeys('<C-g>V<C-g>', 'n') -- at first switch to Select-Line
+        sendKeys('<C-g>V0<C-g>', 'n') -- at first switch to Select-Line
       end
     elseif mode:match('[S]') then -- Select-Line
       sendKeys('<C-g>>gv<C-g>', 'n')
@@ -1352,9 +1358,9 @@ function M.setup(cfg)
       if mode:match('[s]') then -- Select
         local r1, _, r2, _ = getSelectionRawBounds()
         if r1 == r2 then -- same line
-          sendKeys('<C-g>V<C-g>', 'n') -- at first switch to Select-Line
+          sendKeys('<C-g>V0<C-g>', 'n') -- at first switch to Select-Line
         else -- different lines
-          sendKeys('<C-g>V<C-g>', 'n') -- at first switch to Select-Line
+          sendKeys('<C-g>V0<C-g>', 'n') -- at first switch to Select-Line
         end
       elseif mode:match('[S]') then -- Select-Line
         sendKeys('<C-g><gv<C-g>', 'n')
@@ -1369,9 +1375,9 @@ function M.setup(cfg)
       if mode:match('[s]') then -- Select
         local r1, _, r2, _ = getSelectionRawBounds()
         if r1 == r2 then -- same line
-          sendKeys('<C-g>V<C-g>', 'n') -- at first switch to Select-Line
+          sendKeys('<C-g>V0<C-g>', 'n') -- at first switch to Select-Line
         else -- different lines
-          sendKeys('<C-g>V<C-g>', 'n') -- at first switch to Select-Line
+          sendKeys('<C-g>V0<C-g>', 'n') -- at first switch to Select-Line
         end
       elseif mode:match('[S]') then -- Select-Line
         sendKeys('<C-g>>gv<C-g>', 'n')
@@ -1434,7 +1440,7 @@ function M.setup(cfg)
           sel_multiline
           -- or sel_whole_lines
           then
-          sendKeys('<C-g>V<C-g>', 'n') -- at first switch to Select-Line
+          sendKeys('<C-g>V0<C-g>', 'n') -- at first switch to Select-Line
         else
            -- move text
            f({ submode = 's' })
@@ -1608,7 +1614,7 @@ function M.setup(cfg)
   --     if mode:match('[S]') then -- Select-Line
   --       sendKeys('<C-g>v<C-g>', 'n')
   --     else -- select or select block
-  --       sendKeys('<C-g>V<C-g>', 'n')
+  --       sendKeys('<C-g>V0<C-g>', 'n')
   --     end
   --   else
   --     sendKeys('<C-l>', 'n')
