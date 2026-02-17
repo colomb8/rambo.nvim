@@ -5,7 +5,7 @@ A Neovim plugin that supercharges Insert Mode with modern editing behavior.
 <p align="center">
   <a
     href="https://youtu.be/0BSQpgzkqsc">
-    Watch a non-exhaustive showcase here
+    >>> Watch a non-exhaustive showcase here <<<
   </a>
 </p>
 
@@ -20,6 +20,7 @@ A Neovim plugin that supercharges Insert Mode with modern editing behavior.
 </p>
 
 >Image used under fair use, for illustrative and non-commercial purposes. All rights to the character and image belong to their respective owners.
+---
 
 ## Vision
 
@@ -64,7 +65,7 @@ The idea isn't to replace Normal Mode, but to elevate Insert Mode - making it id
 - **Move lines up/down** with `Alt + ↑ / ↓`. Works on single or multiple selected lines.
 - Move operation can be done also with `Ctrl`, `Home`, `End`, `Page Up`, `Page Down` allowing to move text with the powerful jumps available.
 - While selecting one or more lines, use `→` and `←` to **indent or dedent**.
-- `Insert` key allows to quickly switch between Select and Visual mode (it is also handy to enter insert mode when in normal).
+- `Insert` key allows to quickly switch between Select and Visual mode (it is also handy to enter insert mode when in normal mode).
 
 ### Wrapping
 
@@ -94,11 +95,18 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
   "colomb8/rambo.nvim",
   config = function()
     require("rambo").setup({
-      -- c_right_mode = 'eow', -- 'eow' or 'bow'
-      -- op_prefix = '', -- '' or '<C-q>' or '<C-g>'
-      -- hl_select_spec = { -- hl_spec or false
-      --   bg = '#732BF5', -- Neon Violet
-      -- },
+      c_right_mode = 'eow', -- 'eow' or 'bow'
+      op_prefix = '', -- '' or '<C-q>' or '<C-g>'
+      synced_registers_tbl = {
+        '"',
+        '0',
+        '+', -- Rambo updates '+' only if vim.o.clipboard ~= ''
+        '*', -- Rambo updates '*' only if vim.o.clipboard ~= ''
+      },
+      sync_custom_fun = nil, -- nil or function(text)
+      hl_select_spec = { -- hl_spec or false
+        bg = '#732BF5', -- Neon Violet
+      },
     })
   end,
 },
@@ -106,10 +114,11 @@ Using [**lazy.nvim**](https://github.com/folke/lazy.nvim):
 
 >setup() is required - call it without arguments to use the default behavior.
 
-Configuration:
-- `c_right_mode`: controls how the `C-Right` motion behaves. With `bow` the cursor jumps to the begining of next word. With `eow` the cursor jumps to the end of next word. Default is `eow`.
-- `op_prefix`: it specifies a prefix for operations like Copy, Cut, Paste, Save, etc. As an example, if `op_prefix` is empty string, user can copy selection with `<C-c>`; if otherwise `op_prefix` is `<C-q>`, the operation of copy is achieved with `<C-q>c`. Default is empty string.
-- `hl_select_spec`: it specifies a formatting for selected area; default is `#732BF5` (Neon Violet).
+- `c_right_mode`: Controls how the `<C-Right>` motion behaves. With `bow`, the cursor jumps to the beginning of the next word. With `eow`, the cursor jumps to the end of the next word. Default: `eow`.
+- `op_prefix`: Specifies a prefix for operations such as Copy, Cut, Paste, Save, etc. For example, if `op_prefix` is an empty string, users can copy a selection with `<C-c>`. If `op_prefix` is `<C-q>`, copying is triggered with `<C-q>c`. Default: empty string.
+- `synced_registers_tbl`: A list of Vim registers to update when performing operations such as Copy and Cut. Default: `{'"', '0', '+', '*'}`. Note: Rambo updates `+` or `*` only if `vim.o.clipboard ~= ''`.
+- `sync_custom_fun`: An optional custom function that Rambo calls when syncing registers. Useful, for example, for emitting an OSC52 ANSI sequence when working in a remote terminal where the system clipboard is unavailable. Default: `nil`.
+- `hl_select_spec`: Specifies the highlight style for the selected area. Default: `#732BF5` (Neon Violet).
 
 ## Tips
 
@@ -123,9 +132,10 @@ end
 
 ## Roadmap
 
-- `:help` Vim documentation – provide Vim help file (`:help rambo`) for discoverability.
+- `:help` Vim documentation - provide Vim help file (`:help rambo.txt`) for discoverability.
 - Home, End, Up, Down should support line wrap.
-- Simple multicursor support – implement basic but handy multicursor editing.
+- Supported wrapping characters should be configurable in setup.
+- Simple multicursor support - implement basic but handy multicursor editing.
 
 ## License
 

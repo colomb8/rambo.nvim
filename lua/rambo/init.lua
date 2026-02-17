@@ -17,8 +17,15 @@ local M = {}
 function M.setup(user_opts)
 
   local config = vim.tbl_deep_extend("force", {
-    c_right_mode = 'bow', -- 'bow' or 'eow'
+    c_right_mode = 'eow', -- 'eow' or 'bow'
     op_prefix = '', -- '' or '<C-q>' or '<C-g>'
+    synced_registers_tbl = {
+      '"',
+      '0',
+      '+', -- rambo updates '+' only if vim.o.clipboard ~= ''
+      '*', -- rambo updates '*' only if vim.o.clipboard ~= ''
+    },
+    sync_custom_fun = nil, -- nil or function(text)
     hl_select_spec = { -- hl_spec or false
       bg = '#732BF5', -- Neon Violet
     },

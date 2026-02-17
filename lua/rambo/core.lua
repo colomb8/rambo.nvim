@@ -309,702 +309,7 @@ local opt_selection_original_value = vim.o.selection
 local M = {}
 
 ------------------------------------------------------------------------------
--- Rambo.nvim Autocommands
-------------------------------------------------------------------------------
-
-vim.api.nvim_create_autocmd("ModeChanged", {
-  pattern = "*:ni*", -- "*:ni[IRV]"
-  callback = function()
-    vim.o.selection = 'exclusive'
-    insert_special = true
-  end,
-})
-
--- update rambo internal register on yank
-vim.api.nvim_create_autocmd("TextYankPost", { -- yank or delete
-  -- from documentation: "TextYankPost Just after a yank or deleting command,
-  -- but not if the black hole register quote_ is used nor for setreg()"
-  callback = function()
-    local mode = vim.fn.mode(1)
-    -- if mode:match("[nvV\22]*") then -- normal or any visual
-    if mode ~= 'niI' then -- exclude Select-Insert
-      rambo_register_lines = splitStr(vim.fn.getreg('"'), '\n')
-    end
-  end,
-})
-
--- restore " and + registers if Select while typing
-vim.api.nvim_create_autocmd("ModeChanged", {
-  pattern = "*[sS\19]:niI",
-  callback = function()
-    local tmp = table.concat(rambo_register_lines or {}, '\n')
-    vim.fn.setreg('*', tmp, 'c')
-    vim.fn.setreg('+', tmp, 'c')
-    vim.fn.setreg('"', tmp, 'c')
-    vim.fn.setreg('0', tmp, 'c')
-  end,
-})
-
-vim.api.nvim_create_autocmd("InsertEnter", {
-  callback = function()
-    vim.o.selection = opt_selection_original_value
-    insert_special = false
-  end,
-})
-
-------------------------------------------------------------------------------
--- Rambo.nvim Functions
-------------------------------------------------------------------------------
-
-local function getPrevCol(line, col)
-  -- inclusive
-  -- vim.regex uses vim.o.iskeyword !
-  col = col or 1
-  local left = line:sub(1, col - 1)
-  -- match the last UTF-8 char
-  local r = vim.regex(".$")
-  local from, _ = r:match_str(left)
-  return from and (from + 1) or nil
-end
-
-local function getNextCol(line, col)
-  -- inclusive
-  -- vim.regex uses vim.o.iskeyword !
-  col = col or 1
-  local r = vim.regex(""
-    .. "\\%" .. col .. "c"  -- Matches in a specific column
-    .. "."                  -- Matches 1 car UTF-8 safe
-  )
-  local _, to = r:match_str(line)
-  return to and to + 1
-end
-
-local function getFirstEndOfWord(line)
-  -- inclusive
-  -- vim.regex uses vim.o.iskeyword !
-  local r = vim.regex(""
-    .. "\\("
-      -- punct/symbol              ,  kw or blank
-      .. "[^[:keyword:][:blank:]]" .. "[[:keyword:][:blank:]]"
-    .. "\\)"
-    .. "\\|" -- or
-    .. "\\("
-      -- kw              ,  blank or punct/symbol
-      .. "[[:keyword:]]" .. "[^[:keyword:]]"
-    .. "\\)"
-  )
-  local _, to = r:match_str(line .. " ") -- <--
-  return to and to - 1
-end
-
-local function getNextBeginningOfWord(line)
-  -- inclusive
-  -- vim.regex uses vim.o.iskeyword !
-  local r = vim.regex(""
-    .. "\\("
-      -- kw or blank            ,  punct/symbol
-    .. "[[:keyword:][:blank:]]" .. "[^[:keyword:][:blank:]]"
-    .. "\\)"
-    .. "\\|" -- or
-    .. "\\("
-      -- blank or punct/symbol, kw
-       .. "[^[:keyword:]]" .. "[[:keyword:]]"
-    .. "\\)"
-  )
-  local _, to = r:match_str(line .. " ") -- <--
-  return to and to - 1
-end
-
-local function getLastBeginningOfWord(line)
-  -- vim.regex uses vim.o.iskeyword !
-  local tmp = getFirstEndOfWord(line:reverse())
-  return tmp and line:len() - tmp + 1
-end
-
-local function getFirstBeginningOfWord(line)
-  -- vim.regex uses vim.o.iskeyword !
-  local r = vim.regex(""
-    .. "\\("
-      -- blank         ,  kw or punct/symbol
-      .. "[[:blank:]]" .. "[^[:blank:]]"
-    .. "\\)"
-  )
-  local _, to = r:match_str(" " .. line) -- <--
-  return to and to - 1
-end
-
-local rmbMotionLeft = {
-  dir = -1,
-  move = function()
-    local col = vim.fn.col('.')
-    local row = vim.fn.line('.')
-    --
-    local row_target
-    local col_target
-    if col == 1 then
-      if row == 1 then
-        return nil
-      else
-        row_target = row - 1
-        col_target = vim.fn.getline(row - 1):len() + 1
-      end
-    else
-      row_target = row
-      local line = vim.fn.getline('.')
-      col_target = getPrevCol(line, col)
-      -- col_target = col - 1
-    end
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionRight = {
-  dir = 1,
-  move = function()
-    local col = vim.fn.col('.')
-    local row = vim.fn.line('.')
-    local line_len = vim.fn.getline('.'):len()
-    local row_last = vim.fn.line('$')
-    --
-    local row_target = row
-    local col_target
-    if col <= line_len then
-        local line = vim.fn.getline('.')
-        col_target = getNextCol(line, col)
-        -- col_target = col + 1
-    else -- col > line_end (onemore)
-      if row == row_last then
-        return nil
-      else
-        row_target = row + 1
-        col_target = 1
-      end
-    end
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionCLeft = {
-  dir = -1,
-  move = function()
-    local col = vim.fn.col('.')
-    local row = vim.fn.line('.')
-    local line = vim.fn.getline('.')
-    local line_l = line:sub(0, col - 1)
-    local col_lbow_l = getLastBeginningOfWord(line_l)
-    --
-    local row_target = row
-    local col_target
-    if col_lbow_l then
-      col_target = col_lbow_l
-    elseif col <= 1 then
-      if row > 1 then
-        col_target = vim.fn.getline(row - 1):len() + 1
-        row_target = row_target - 1
-      else
-        return nil
-      end
-    else
-      col_target = 1
-    end
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionCRight = {
-  dir = 1,
-  move = function(c_right_mode)
-    local col = vim.fn.col('.')
-    local row = vim.fn.line('.')
-    local line = vim.fn.getline('.')
-    local line_len = line:len()
-    --
-    local line_l = line:sub(0, col - 1)
-    local line_r = line:sub(col)
-    local col_cright
-    if c_right_mode == 'eow' then
-      col_cright = getFirstEndOfWord(line_r)
-    elseif c_right_mode == 'bow' then
-      col_cright = getNextBeginningOfWord(line_r)
-    else
-      error(tostring(c_right_mode))
-    end
-    --
-    local row_target = row
-    local col_target
-    if col < line_len then
-      if not col_cright then
-        col_target = line_len + 1
-      else
-        col_target = line_l:len() + col_cright + 1
-      end
-    elseif col == line_len then
-      col_target = line_len + 1
-    else -- col > line_len (onemore)
-      if row < vim.fn.line('$') then
-        row_target = row + 1
-        col_target = 1
-      else
-        col_target = col -- (return)
-      end
-    end
-    --
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionHome = {
-  dir = -1,
-  move = function()
-    -- cycle between col 1 and first word
-    local col = vim.fn.col('.')
-    local row = vim.fn.line('.')
-    local line = vim.fn.getline('.')
-    local col_fbow = getFirstBeginningOfWord(line)
-    local line_l = line:sub(0, col - 1)
-    local col_fbow_l = getFirstBeginningOfWord(line_l)
-    --
-    local row_target = row
-    local col_target
-    if col == 1 and col_fbow then
-      col_target = col_fbow
-    elseif col_fbow_l then
-      col_target = col_fbow_l
-    else
-      col_target = 1
-    end
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionEnd = {
-  dir = 1,
-  move = function()
-    local col = vim.fn.col('.')
-    local row = vim.fn.line('.')
-    local line = vim.fn.getline('.')
-    local line_len = line:len()
-    --
-    local row_target = row
-    local col_target
-    if col == line_len + 1 then -- onemore
-      return nil
-    else
-      col_target = line_len + 1
-    end
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionPageUp = {
-  dir = -1,
-  move = function()
-    local row = vim.fn.line('.')
-    local col = vim.fn.col('.')
-    local win_height = vim.api.nvim_win_get_height(0)
-    --
-    local row_target
-    local col_target
-    if row == 1 then
-      if col == 1 then
-        return nil
-      else
-        row_target = 1
-        col_target = 1
-      end
-    else
-      row_target = math.max(1, row - win_height)
-      col_target = 1
-    end
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionPageDown = {
-  dir = 1,
-  move = function()
-    local row = vim.fn.line('.')
-    local col = vim.fn.col('.')
-    local win_height = vim.api.nvim_win_get_height(0)
-    local buf_line_count = vim.api.nvim_buf_line_count(0)
-    --
-    local row_target
-    local col_target
-    if row == buf_line_count then
-      local line_target_len = vim.fn.getline('.'):len()
-      if col == line_target_len + 1 then
-        return nil
-      else
-        row_target = row
-        col_target = line_target_len + 1
-      end
-    else
-      row_target = math.min(buf_line_count, row + win_height)
-      col_target = 1
-    end
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionCUp = {
-  dir = -1,
-  move = function()
-    local r = vim.fn.line('.')
-    --
-    local line_x = vim.fn.getline(r)
-    while r >= 2 do
-      r = r - 1
-      local line_y = vim.fn.getline(r)
-      if line_x:len() > 0 and line_y:len() == 0 then
-        break
-      end
-      line_x = line_y
-    end
-    local row_target = r
-    local col_target = 1
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionCDown = {
-  dir = 1,
-  move = function()
-    local r = vim.fn.line('.')
-    local buf_line_count = vim.api.nvim_buf_line_count(0)
-    --
-    local line_x = vim.fn.getline(r)
-    local line_y
-    while r < buf_line_count do
-      r = r + 1
-      line_y = vim.fn.getline(r)
-      if line_x:len() > 0 and line_y:len() == 0 then
-        break
-      end
-      line_x = line_y
-    end
-    local row_target = r
-    local col_target
-    if not line_y then
-      col_target = line_x:len() + 1
-    elseif line_y:len() == 0 then
-      col_target = 1
-    else
-      col_target = line_y:len() + 1
-    end
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionUp = {
-  dir = -1,
-  move = function()
-    local r = vim.fn.line('.')
-    if r == 1 then return nil end
-    local c = vim.fn.col('.')
-    local row_target = r - 1
-    local line_target_len = vim.fn.getline(row_target):len()
-    local col_target = math.min(c, line_target_len + 1)
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionDown = {
-  dir = 1,
-  move = function()
-    local r = vim.fn.line('.')
-    if r >= vim.fn.line('$') then return nil end
-    local c = vim.fn.col('.')
-    local row_target = r + 1
-    local line_target_len = vim.fn.getline(row_target):len()
-    local col_target = math.min(c, line_target_len + 1)
-    setCursor(row_target, col_target)
-  end
-}
-
-local function rmbLeaveSelectLeft()
-  local r, c, _, _, _ = getSelectionBoundsAndDirection()
-  sendKeys('<ESC>', 'n')
-  vim.schedule(function() setCursor(r, c) end)
-end
-
-local function rmbLeaveSelectRight()
-  local _, _, r, c, _ = getSelectionBoundsAndDirection()
-  if c == vim.fn.getline(r):len() + 1 then -- onemore
-    if r < vim.fn.line('$') then -- not last row
-      r = r + 1
-      c = 1
-    end
-  else
-    c = c + 1
-  end
-  sendKeys('<ESC>', 'n')
-  vim.schedule(function() setCursor(r, c) end)
-end
-
-local rmbMotionCHome = {
-  dir = -1,
-  move = function()
-    local row_target = 1
-    local col_target = 1
-    setCursor(row_target, col_target)
-  end
-}
-
-local rmbMotionCEnd = {
-  dir = 1,
-  move = function()
-    local row_last = vim.fn.line('$')
-    local col_lastrow = vim.fn.getline(row_last):len() + 1
-    local row_target = row_last
-    local col_target = col_lastrow
-    setCursor(row_target, col_target)
-  end
-}
-
-local function rmbMoveLineUp()
-  local row = vim.fn.line('.')
-  local col = vim.fn.col('.')
-  --
-  if row == 1 then return end
-  local line = cutLine(row - 1)
-  insertLine(row, line)
-  setCursor(row - 1, col)
-end
-
-local function rmbMoveLineDown()
-  local row = vim.fn.line('.')
-  local col = vim.fn.col('.')
-  local row_last = vim.fn.line('$')
-  --
-  if row == row_last then return end
-  local line = cutLine(row)
-  insertLine(row + 1, line)
-  setCursor(row + 1, col)
-end
-
-local function rmbMoveLinesUp()
-  local _, v_row_start, v_col_start, _ = unpack(vim.fn.getpos("v"))
-  local _, v_row_end, v_col_end, _ = unpack(vim.fn.getpos("."))
-  --
-  local row_top = math.min(v_row_start, v_row_end)
-  local row_bottom = math.max(v_row_start, v_row_end)
-  --
-  if row_top == 1 then return end
-  local line_tmp = cutLine(row_top - 1)
-  insertLine(row_bottom, line_tmp)
-  --
-  sendKeys('<ESC>', 'n')
-  setCursor(v_row_start - 1, v_col_start)
-  sendKeys('<C-o>V<C-g>', 'nx')
-  setCursor(v_row_end - 1, v_col_end)
-end
-
-local function rmbMoveLinesDown()
-  local _, v_row_start, v_col_start, _ = unpack(vim.fn.getpos("v"))
-  local _, v_row_end, v_col_end, _ = unpack(vim.fn.getpos("."))
-  local row_last = vim.fn.line('$')
-  --
-  local row_top = math.min(v_row_start, v_row_end)
-  local row_bottom = math.max(v_row_start, v_row_end)
-  --
-  if row_bottom == row_last then return end
-  local line_tmp = cutLine(row_bottom + 1)
-  insertLine(row_top, line_tmp)
-  --
-  sendKeys('<ESC>', 'n')
-  setCursor(v_row_start + 1, v_col_start)
-  sendKeys('<C-o>V<C-g>', 'nx')
-  setCursor(v_row_end + 1, v_col_end)
-end
-
-local function rmbCopy(opts)
-  opts = opts or {}
-  local r1, c1, r2, c2, _ = getSelectionBoundsAndDirection()
-  if opts['is_lines'] then
-    c1 = 1
-    c2 = vim.fn.getline(r2):len()
-  end
-  rambo_register_lines =  getTextFromBounds(r1, c1, r2, c2)
-  local tmp = table.concat(rambo_register_lines, '\n')
-  vim.fn.setreg('*', tmp, 'c')
-  vim.fn.setreg('+', tmp, 'c')
-  vim.fn.setreg('"', tmp, 'c')
-  vim.fn.setreg('0', tmp, 'c')
-  --
-  blinkText({
-    ['buffer'] = 0,
-    ['row_start'] = r1,
-    ['col_start'] = c1,
-    ['row_end'] = r2,
-    ['col_end'] = c2,
-    ['hl_group'] = 'IncSearch', -- as vim.highlight.on_yank()
-    -- Priority is useless because Visual/Select has
-    -- always highest prio; so only foreground blinks
-    -- ['priority'] = 1000,
-    ['blink_time'] = 150,
-  })
-end
-
-local function rmbCut(opts)
-  opts = opts or {}
-  local r1, c1, r2, c2, _ = getSelectionBoundsAndDirection()
-  if opts['is_lines'] then
-    c1 = 1
-    c2 = vim.fn.getline(r2):len()
-  else
-    if r1 == r2 and c1 == c2 + 1 then return nil end
-  end
-  rambo_register_lines = getTextFromBounds(r1, c1, r2, c2)
-  local tmp = table.concat(rambo_register_lines, '\n')
-  vim.fn.setreg('*', tmp, 'c')
-  vim.fn.setreg('+', tmp, 'c')
-  vim.fn.setreg('"', tmp, 'c')
-  vim.fn.setreg('0', tmp, 'c')
-  sendKeys('<ESC>', 'n')
-  if opts['is_lines'] then
-    deleteLines(r1, r2)
-    setCursor(r1, 1)
-  else
-    deleteText(r1, c1, r2, c2)
-  end
-end
-
-local function rmbPaste(opts)
-  rambo_register_lines = nil
-    or rambo_register_lines
-    or splitStr(vim.fn.getreg('*'), '\n')
-    or splitStr(vim.fn.getreg('+'), '\n')
-    or splitStr(vim.fn.getreg('"'), '\n')
-    or splitStr(vim.fn.getreg('0'), '\n')
-  opts = opts or {}
-  if opts['submode'] == 'insert' then
-    local row = vim.fn.line('.')
-    local col = vim.fn.col('.')
-    insertText(row, col, rambo_register_lines)
-    advanceCursorFromLines(rambo_register_lines)
-  elseif opts['submode'] == 'select' then
-    local r1, c1, r2, c2, _ = getSelectionBoundsAndDirection()
-    sendKeys('<ESC>', 'n')
-    deleteText(r1, c1, r2, c2)
-    insertText(r1, c1, rambo_register_lines)
-  else
-    error(tostring(opts['submode']))
-  end
-end
-
-local function setSelect(r1, c1, r2, c2, dir)
-  -- if directly mapped
-  -- add schedule and remove x in 'nx'
-  -- print('ss', r1, c1, r2, c2, dir)
-  --
-  local _r2 = r2
-  local _c2 = c2
-  _c2 = _c2 + 1
-  if dir == 1 then
-    setCursor(r1, c1)
-    sendKeys('<C-\\><C-o>v<C-g>', 'nx') -- warn! x
-    -- vim.schedule(function()
-      setCursor(_r2, _c2)
-    -- end)
-  elseif dir == -1 then
-    setCursor(_r2, _c2)
-    sendKeys('<C-\\><C-o>v<C-g>', 'nx') -- warn! x
-    -- vim.schedule(function()
-      setCursor(r1, c1)
-    -- end)
-  else
-    error(tostring(dir))
-  end
-end
-
-local function save()
-  vim.cmd(":w")
-end
-
-local function rmbMoveSel(rmbMotion, opts)
-  opts = opts or {}
-  local r1, c1, r2, c2, dir = getSelectionBoundsAndDirection()
-  if opts['submode'] == 's' then
-    -- move Select selection
-    assert(r1 == r2)
-    local r = r1
-    if c1 == c2 + 1 then return nil end
-    local text = getTextFromBounds(r, c1, r, c2)
-    sendKeys('<ESC>', 'n')
-    deleteText(r, c1, r, c2)
-    rmbMotion.move(opts['c_right_mode'])
-    local row_target = vim.fn.line('.')
-    local col_target = vim.fn.col('.')
-    insertText(row_target, col_target, text)
-    setSelect(row_target, col_target, row_target, col_target + (c2 - c1), dir)
-  elseif opts['submode'] == 'S' then
-    -- move Select-Line selection
-    local _c1 = 1
-    local _c2 = vim.fn.getline(r2):len()
-    local text = getTextFromBounds(r1, _c1, r2, _c2)
-    sendKeys('<ESC>', 'n')
-    if rmbMotion.dir == -1 then
-      setCursor(r1, 1)
-    elseif rmbMotion.dir == 1 then
-      setCursor(r2, 1)
-    else
-      error(tostring(rmbMotion.dir))
-    end
-    rmbMotion.move(opts['c_right_mode'])
-    local row_motion = vim.fn.line('.')
-    local shift
-    if rmbMotion.dir == -1 then
-      shift = row_motion - r1
-    elseif rmbMotion.dir == 1 then
-      shift = row_motion - r2
-    else
-      error(tostring(rmbMotion.dir))
-    end
-    move_range_rel(r1, r2, shift)
-    setSelect(
-      r1 + shift,
-      c1,
-      r2 + shift,
-      c2,
-      dir
-    )
-    sendKeys('<C-g>V<C-g>', 'n')
-  else
-    error(tostring(opts['submode']))
-  end
-end
-
--- if single line and not Select-Line: move by 1 char
--- if multi line or Select-Line: indent/dedent
-local function rmbMoveSelLeft(opts) rmbMoveSel(rmbMotionLeft, opts) end
-local function rmbMoveSelRight(opts) rmbMoveSel(rmbMotionRight, opts) end
-
--- only single line
-local function rmbMoveSelCLeft(opts) rmbMoveSel(rmbMotionCLeft, opts) end
-local function rmbMoveSelCRight(opts) rmbMoveSel(rmbMotionCRight, opts) end
-local function rmbMoveSelHome(opts) rmbMoveSel(rmbMotionHome, opts) end
-local function rmbMoveSelEnd(opts) rmbMoveSel(rmbMotionEnd, opts) end
-
--- if Select:
---   if multiline: switch to S-Line
---   if no multiline: move text
--- if Select-Line: move Lines
-local function rmbMoveSelUp(opts) rmbMoveSel(rmbMotionUp, opts) end
-local function rmbMoveSelCUp(opts) rmbMoveSel(rmbMotionCUp, opts) end
-local function rmbMoveSelPageUp(opts) rmbMoveSel(rmbMotionPageUp, opts) end
-local function rmbMoveSelCHome(opts) rmbMoveSel(rmbMotionCHome, opts) end
-local function rmbMoveSelDown(opts) rmbMoveSel(rmbMotionDown, opts) end
-local function rmbMoveSelCDown(opts) rmbMoveSel(rmbMotionCDown, opts) end
-local function rmbMoveSelPageDown(opts) rmbMoveSel(rmbMotionPageDown, opts) end
-local function rmbMoveSelCEnd(opts) rmbMoveSel(rmbMotionCEnd, opts) end
-
--- TODO
--- aggiornare readme
----- no licence
--- pushare e propagare
-
-------------------------------------------------------------------------------
--- Rambo.nvim Keybindings
+-- Rambo.nvim Load Configuration
 ------------------------------------------------------------------------------
 
 function M.setup(cfg)
@@ -1015,6 +320,8 @@ function M.setup(cfg)
     assert(vim.list_contains({
       'c_right_mode',
       'op_prefix',
+      'synced_registers_tbl',
+      'sync_custom_fun',
       'hl_select_spec',
     }, k), 'unknown configuration name: ' .. k)
   end
@@ -1024,12 +331,721 @@ function M.setup(cfg)
     '`c_right_mode` supports only "eow" or "bow"; received: '
     .. tostring(cfg.c_right_mode))
 
-  assert(
-    vim.list_contains({'', '<C-q>', '<C-g>'}, cfg.op_prefix),
-    '`op_prefix` supports only "", "<C-q>", "<C-g>"; received: '
-    .. tostring(cfg.op_prefix))
+    assert(
+      vim.list_contains({'', '<C-q>', '<C-g>'}, cfg.op_prefix),
+      '`op_prefix` supports only "", "<C-q>", "<C-g>"; received: '
+      .. tostring(cfg.op_prefix))
 
-  -- Functions cfg dependant  ----------------------------------------------------------
+      for _, v in ipairs(cfg.synced_registers_tbl) do
+        assert(
+          type(v) == "string" and #v == 1,
+          '`synced_registers_tbl` supports only Vim registers names; received: '
+          .. tostring(v))
+        end
+
+        assert(
+          cfg.sync_custom_fun == nil or type(cfg.sync_custom_fun) == 'function',
+          '`sync_custom_fun` must be nil or a function; received: '
+          .. tostring(type(cfg.sync_custom_fun)))
+
+  ------------------------------------------------------------------------------
+  -- Rambo.nvim sync vim registers
+  ------------------------------------------------------------------------------
+
+  local function syncRegisters(text)
+    for _, reg in ipairs(cfg.synced_registers_tbl) do
+      if not (
+        (reg == '+' or reg == '*')
+        and vim.o.clipboard == ''
+      ) then
+        vim.fn.setreg(reg, text, 'c')
+      end
+    end
+    if cfg.sync_custom_fun then
+      cfg.sync_custom_fun(text)
+    end
+  end
+
+  ------------------------------------------------------------------------------
+  -- Rambo.nvim Autocommands
+  ------------------------------------------------------------------------------
+
+  vim.api.nvim_create_autocmd("ModeChanged", {
+    pattern = "*:ni*", -- "*:ni[IRV]"
+    callback = function()
+      vim.o.selection = 'exclusive'
+      insert_special = true
+    end,
+  })
+
+  -- update rambo internal register on yank
+  vim.api.nvim_create_autocmd("TextYankPost", { -- yank or delete
+    -- from documentation: "TextYankPost Just after a yank or deleting command,
+    -- but not if the black hole register quote_ is used nor for setreg()"
+    callback = function()
+      local mode = vim.fn.mode(1)
+      -- if mode:match("[nvV\22]*") then -- normal or any visual
+      if mode ~= 'niI' then -- exclude Select-Insert
+        rambo_register_lines = splitStr(vim.fn.getreg('"'), '\n')
+      end
+    end,
+  })
+
+  -- restore " and + registers if Select while typing
+  vim.api.nvim_create_autocmd("ModeChanged", {
+    pattern = "*[sS\19]:niI",
+    callback = function()
+      local tmp = table.concat(rambo_register_lines or {}, '\n')
+      syncRegisters(tmp)
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("InsertEnter", {
+    callback = function()
+      vim.o.selection = opt_selection_original_value
+      insert_special = false
+    end,
+  })
+
+  ------------------------------------------------------------------------------
+  -- Rambo.nvim Functions
+  ------------------------------------------------------------------------------
+
+  local function getPrevCol(line, col)
+    -- inclusive
+    -- vim.regex uses vim.o.iskeyword !
+    col = col or 1
+    local left = line:sub(1, col - 1)
+    -- match the last UTF-8 char
+    local r = vim.regex(".$")
+    local from, _ = r:match_str(left)
+    return from and (from + 1) or nil
+  end
+
+  local function getNextCol(line, col)
+    -- inclusive
+    -- vim.regex uses vim.o.iskeyword !
+    col = col or 1
+    local r = vim.regex(""
+      .. "\\%" .. col .. "c"  -- Matches in a specific column
+      .. "."                  -- Matches 1 car UTF-8 safe
+    )
+    local _, to = r:match_str(line)
+    return to and to + 1
+  end
+
+  local function getFirstEndOfWord(line)
+    -- inclusive
+    -- vim.regex uses vim.o.iskeyword !
+    local r = vim.regex(""
+      .. "\\("
+        -- punct/symbol              ,  kw or blank
+        .. "[^[:keyword:][:blank:]]" .. "[[:keyword:][:blank:]]"
+      .. "\\)"
+      .. "\\|" -- or
+      .. "\\("
+        -- kw              ,  blank or punct/symbol
+        .. "[[:keyword:]]" .. "[^[:keyword:]]"
+      .. "\\)"
+    )
+    local _, to = r:match_str(line .. " ") -- <--
+    return to and to - 1
+  end
+
+  local function getNextBeginningOfWord(line)
+    -- inclusive
+    -- vim.regex uses vim.o.iskeyword !
+    local r = vim.regex(""
+      .. "\\("
+        -- kw or blank            ,  punct/symbol
+      .. "[[:keyword:][:blank:]]" .. "[^[:keyword:][:blank:]]"
+      .. "\\)"
+      .. "\\|" -- or
+      .. "\\("
+        -- blank or punct/symbol, kw
+         .. "[^[:keyword:]]" .. "[[:keyword:]]"
+      .. "\\)"
+    )
+    local _, to = r:match_str(line .. " ") -- <--
+    return to and to - 1
+  end
+
+  local function getLastBeginningOfWord(line)
+    -- vim.regex uses vim.o.iskeyword !
+    local tmp = getFirstEndOfWord(line:reverse())
+    return tmp and line:len() - tmp + 1
+  end
+
+  local function getFirstBeginningOfWord(line)
+    -- vim.regex uses vim.o.iskeyword !
+    local r = vim.regex(""
+      .. "\\("
+        -- blank         ,  kw or punct/symbol
+        .. "[[:blank:]]" .. "[^[:blank:]]"
+      .. "\\)"
+    )
+    local _, to = r:match_str(" " .. line) -- <--
+    return to and to - 1
+  end
+
+  local rmbMotionLeft = {
+    dir = -1,
+    move = function()
+      local col = vim.fn.col('.')
+      local row = vim.fn.line('.')
+      --
+      local row_target
+      local col_target
+      if col == 1 then
+        if row == 1 then
+          return nil
+        else
+          row_target = row - 1
+          col_target = vim.fn.getline(row - 1):len() + 1
+        end
+      else
+        row_target = row
+        local line = vim.fn.getline('.')
+        col_target = getPrevCol(line, col)
+        -- col_target = col - 1
+      end
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local rmbMotionRight = {
+    dir = 1,
+    move = function()
+      local col = vim.fn.col('.')
+      local row = vim.fn.line('.')
+      local line_len = vim.fn.getline('.'):len()
+      local row_last = vim.fn.line('$')
+      --
+      local row_target = row
+      local col_target
+      if col <= line_len then
+          local line = vim.fn.getline('.')
+          col_target = getNextCol(line, col)
+          -- col_target = col + 1
+      else -- col > line_end (onemore)
+        if row == row_last then
+          return nil
+        else
+          row_target = row + 1
+          col_target = 1
+        end
+      end
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local rmbMotionCLeft = {
+    dir = -1,
+    move = function()
+      local col = vim.fn.col('.')
+      local row = vim.fn.line('.')
+      local line = vim.fn.getline('.')
+      local line_l = line:sub(0, col - 1)
+      local col_lbow_l = getLastBeginningOfWord(line_l)
+      --
+      local row_target = row
+      local col_target
+      if col_lbow_l then
+        col_target = col_lbow_l
+      elseif col <= 1 then
+        if row > 1 then
+          col_target = vim.fn.getline(row - 1):len() + 1
+          row_target = row_target - 1
+        else
+          return nil
+        end
+      else
+        col_target = 1
+      end
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local rmbMotionCRight = {
+    dir = 1,
+    move = function(c_right_mode)
+      local col = vim.fn.col('.')
+      local row = vim.fn.line('.')
+      local line = vim.fn.getline('.')
+      local line_len = line:len()
+      --
+      local line_l = line:sub(0, col - 1)
+      local line_r = line:sub(col)
+      local col_cright
+      if c_right_mode == 'eow' then
+        col_cright = getFirstEndOfWord(line_r)
+      elseif c_right_mode == 'bow' then
+        col_cright = getNextBeginningOfWord(line_r)
+      else
+        error(tostring(c_right_mode))
+      end
+      --
+      local row_target = row
+      local col_target
+      if col < line_len then
+        if not col_cright then
+          col_target = line_len + 1
+        else
+          col_target = line_l:len() + col_cright + 1
+        end
+      elseif col == line_len then
+        col_target = line_len + 1
+      else -- col > line_len (onemore)
+        if row < vim.fn.line('$') then
+          row_target = row + 1
+          col_target = 1
+        else
+          col_target = col -- (return)
+        end
+      end
+      --
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local rmbMotionHome = {
+    dir = -1,
+    move = function()
+      -- cycle between col 1 and first word
+      local col = vim.fn.col('.')
+      local row = vim.fn.line('.')
+      local line = vim.fn.getline('.')
+      local col_fbow = getFirstBeginningOfWord(line)
+      local line_l = line:sub(0, col - 1)
+      local col_fbow_l = getFirstBeginningOfWord(line_l)
+      --
+      local row_target = row
+      local col_target
+      if col == 1 and col_fbow then
+        col_target = col_fbow
+      elseif col_fbow_l then
+        col_target = col_fbow_l
+      else
+        col_target = 1
+      end
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local rmbMotionEnd = {
+    dir = 1,
+    move = function()
+      local col = vim.fn.col('.')
+      local row = vim.fn.line('.')
+      local line = vim.fn.getline('.')
+      local line_len = line:len()
+      --
+      local row_target = row
+      local col_target
+      if col == line_len + 1 then -- onemore
+        return nil
+      else
+        col_target = line_len + 1
+      end
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local rmbMotionPageUp = {
+    dir = -1,
+    move = function()
+      local row = vim.fn.line('.')
+      local col = vim.fn.col('.')
+      local win_height = vim.api.nvim_win_get_height(0)
+      --
+      local row_target
+      local col_target
+      if row == 1 then
+        if col == 1 then
+          return nil
+        else
+          row_target = 1
+          col_target = 1
+        end
+      else
+        row_target = math.max(1, row - win_height)
+        col_target = 1
+      end
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local rmbMotionPageDown = {
+    dir = 1,
+    move = function()
+      local row = vim.fn.line('.')
+      local col = vim.fn.col('.')
+      local win_height = vim.api.nvim_win_get_height(0)
+      local buf_line_count = vim.api.nvim_buf_line_count(0)
+      --
+      local row_target
+      local col_target
+      if row == buf_line_count then
+        local line_target_len = vim.fn.getline('.'):len()
+        if col == line_target_len + 1 then
+          return nil
+        else
+          row_target = row
+          col_target = line_target_len + 1
+        end
+      else
+        row_target = math.min(buf_line_count, row + win_height)
+        col_target = 1
+      end
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local rmbMotionCUp = {
+    dir = -1,
+    move = function()
+      local r = vim.fn.line('.')
+      --
+      local line_x = vim.fn.getline(r)
+      while r >= 2 do
+        r = r - 1
+        local line_y = vim.fn.getline(r)
+        if line_x:len() > 0 and line_y:len() == 0 then
+          break
+        end
+        line_x = line_y
+      end
+      local row_target = r
+      local col_target = 1
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local rmbMotionCDown = {
+    dir = 1,
+    move = function()
+      local r = vim.fn.line('.')
+      local buf_line_count = vim.api.nvim_buf_line_count(0)
+      --
+      local line_x = vim.fn.getline(r)
+      local line_y
+      while r < buf_line_count do
+        r = r + 1
+        line_y = vim.fn.getline(r)
+        if line_x:len() > 0 and line_y:len() == 0 then
+          break
+        end
+        line_x = line_y
+      end
+      local row_target = r
+      local col_target
+      if not line_y then
+        col_target = line_x:len() + 1
+      elseif line_y:len() == 0 then
+        col_target = 1
+      else
+        col_target = line_y:len() + 1
+      end
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local rmbMotionUp = {
+    dir = -1,
+    move = function()
+      local r = vim.fn.line('.')
+      if r == 1 then return nil end
+      local c = vim.fn.col('.')
+      local row_target = r - 1
+      local line_target_len = vim.fn.getline(row_target):len()
+      local col_target = math.min(c, line_target_len + 1)
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local rmbMotionDown = {
+    dir = 1,
+    move = function()
+      local r = vim.fn.line('.')
+      if r >= vim.fn.line('$') then return nil end
+      local c = vim.fn.col('.')
+      local row_target = r + 1
+      local line_target_len = vim.fn.getline(row_target):len()
+      local col_target = math.min(c, line_target_len + 1)
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local function rmbLeaveSelectLeft()
+    local r, c, _, _, _ = getSelectionBoundsAndDirection()
+    sendKeys('<ESC>', 'n')
+    vim.schedule(function() setCursor(r, c) end)
+  end
+
+  local function rmbLeaveSelectRight()
+    local _, _, r, c, _ = getSelectionBoundsAndDirection()
+    if c == vim.fn.getline(r):len() + 1 then -- onemore
+      if r < vim.fn.line('$') then -- not last row
+        r = r + 1
+        c = 1
+      end
+    else
+      c = c + 1
+    end
+    sendKeys('<ESC>', 'n')
+    vim.schedule(function() setCursor(r, c) end)
+  end
+
+  local rmbMotionCHome = {
+    dir = -1,
+    move = function()
+      local row_target = 1
+      local col_target = 1
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local rmbMotionCEnd = {
+    dir = 1,
+    move = function()
+      local row_last = vim.fn.line('$')
+      local col_lastrow = vim.fn.getline(row_last):len() + 1
+      local row_target = row_last
+      local col_target = col_lastrow
+      setCursor(row_target, col_target)
+    end
+  }
+
+  local function rmbMoveLineUp()
+    local row = vim.fn.line('.')
+    local col = vim.fn.col('.')
+    --
+    if row == 1 then return end
+    local line = cutLine(row - 1)
+    insertLine(row, line)
+    setCursor(row - 1, col)
+  end
+
+  local function rmbMoveLineDown()
+    local row = vim.fn.line('.')
+    local col = vim.fn.col('.')
+    local row_last = vim.fn.line('$')
+    --
+    if row == row_last then return end
+    local line = cutLine(row)
+    insertLine(row + 1, line)
+    setCursor(row + 1, col)
+  end
+
+  local function rmbMoveLinesUp()
+    local _, v_row_start, v_col_start, _ = unpack(vim.fn.getpos("v"))
+    local _, v_row_end, v_col_end, _ = unpack(vim.fn.getpos("."))
+    --
+    local row_top = math.min(v_row_start, v_row_end)
+    local row_bottom = math.max(v_row_start, v_row_end)
+    --
+    if row_top == 1 then return end
+    local line_tmp = cutLine(row_top - 1)
+    insertLine(row_bottom, line_tmp)
+    --
+    sendKeys('<ESC>', 'n')
+    setCursor(v_row_start - 1, v_col_start)
+    sendKeys('<C-o>V<C-g>', 'nx')
+    setCursor(v_row_end - 1, v_col_end)
+  end
+
+  local function rmbMoveLinesDown()
+    local _, v_row_start, v_col_start, _ = unpack(vim.fn.getpos("v"))
+    local _, v_row_end, v_col_end, _ = unpack(vim.fn.getpos("."))
+    local row_last = vim.fn.line('$')
+    --
+    local row_top = math.min(v_row_start, v_row_end)
+    local row_bottom = math.max(v_row_start, v_row_end)
+    --
+    if row_bottom == row_last then return end
+    local line_tmp = cutLine(row_bottom + 1)
+    insertLine(row_top, line_tmp)
+    --
+    sendKeys('<ESC>', 'n')
+    setCursor(v_row_start + 1, v_col_start)
+    sendKeys('<C-o>V<C-g>', 'nx')
+    setCursor(v_row_end + 1, v_col_end)
+  end
+
+  local function rmbCopy(opts)
+    opts = opts or {}
+    local r1, c1, r2, c2, _ = getSelectionBoundsAndDirection()
+    if opts['is_lines'] then
+      c1 = 1
+      c2 = vim.fn.getline(r2):len()
+    end
+    rambo_register_lines =  getTextFromBounds(r1, c1, r2, c2)
+    local tmp = table.concat(rambo_register_lines, '\n')
+    syncRegisters(tmp)
+    --
+    blinkText({
+      ['buffer'] = 0,
+      ['row_start'] = r1,
+      ['col_start'] = c1,
+      ['row_end'] = r2,
+      ['col_end'] = c2,
+      ['hl_group'] = 'IncSearch', -- as vim.highlight.on_yank()
+      -- Priority is useless because Visual/Select has
+      -- always highest prio; so only foreground blinks
+      -- ['priority'] = 1000,
+      ['blink_time'] = 150,
+    })
+  end
+
+  local function rmbCut(opts)
+    opts = opts or {}
+    local r1, c1, r2, c2, _ = getSelectionBoundsAndDirection()
+    if opts['is_lines'] then
+      c1 = 1
+      c2 = vim.fn.getline(r2):len()
+    else
+      if r1 == r2 and c1 == c2 + 1 then return nil end
+    end
+    rambo_register_lines = getTextFromBounds(r1, c1, r2, c2)
+    local tmp = table.concat(rambo_register_lines, '\n')
+    syncRegisters(tmp)
+    sendKeys('<ESC>', 'n')
+    if opts['is_lines'] then
+      deleteLines(r1, r2)
+      setCursor(r1, 1)
+    else
+      deleteText(r1, c1, r2, c2)
+    end
+  end
+
+  local function rmbPaste(opts)
+    rambo_register_lines = nil
+      or rambo_register_lines
+      or splitStr(vim.fn.getreg('*'), '\n')
+      or splitStr(vim.fn.getreg('+'), '\n')
+      or splitStr(vim.fn.getreg('"'), '\n')
+      or splitStr(vim.fn.getreg('0'), '\n')
+    opts = opts or {}
+    if opts['submode'] == 'insert' then
+      local row = vim.fn.line('.')
+      local col = vim.fn.col('.')
+      insertText(row, col, rambo_register_lines)
+      advanceCursorFromLines(rambo_register_lines)
+    elseif opts['submode'] == 'select' then
+      local r1, c1, r2, c2, _ = getSelectionBoundsAndDirection()
+      sendKeys('<ESC>', 'n')
+      deleteText(r1, c1, r2, c2)
+      insertText(r1, c1, rambo_register_lines)
+    else
+      error(tostring(opts['submode']))
+    end
+  end
+
+  local function setSelect(r1, c1, r2, c2, dir)
+    -- if directly mapped
+    -- add schedule and remove x in 'nx'
+    -- print('ss', r1, c1, r2, c2, dir)
+    --
+    local _r2 = r2
+    local _c2 = c2
+    _c2 = _c2 + 1
+    if dir == 1 then
+      setCursor(r1, c1)
+      sendKeys('<C-\\><C-o>v<C-g>', 'nx') -- warn! x
+      -- vim.schedule(function()
+        setCursor(_r2, _c2)
+      -- end)
+    elseif dir == -1 then
+      setCursor(_r2, _c2)
+      sendKeys('<C-\\><C-o>v<C-g>', 'nx') -- warn! x
+      -- vim.schedule(function()
+        setCursor(r1, c1)
+      -- end)
+    else
+      error(tostring(dir))
+    end
+  end
+
+  local function save()
+    vim.cmd(":w")
+  end
+
+  local function rmbMoveSel(rmbMotion, opts)
+    opts = opts or {}
+    local r1, c1, r2, c2, dir = getSelectionBoundsAndDirection()
+    if opts['submode'] == 's' then
+      -- move Select selection
+      assert(r1 == r2)
+      local r = r1
+      if c1 == c2 + 1 then return nil end
+      local text = getTextFromBounds(r, c1, r, c2)
+      sendKeys('<ESC>', 'n')
+      deleteText(r, c1, r, c2)
+      rmbMotion.move(opts['c_right_mode'])
+      local row_target = vim.fn.line('.')
+      local col_target = vim.fn.col('.')
+      insertText(row_target, col_target, text)
+      setSelect(row_target, col_target, row_target, col_target + (c2 - c1), dir)
+    elseif opts['submode'] == 'S' then
+      -- move Select-Line selection
+      local _c1 = 1
+      local _c2 = vim.fn.getline(r2):len()
+      local text = getTextFromBounds(r1, _c1, r2, _c2)
+      sendKeys('<ESC>', 'n')
+      if rmbMotion.dir == -1 then
+        setCursor(r1, 1)
+      elseif rmbMotion.dir == 1 then
+        setCursor(r2, 1)
+      else
+        error(tostring(rmbMotion.dir))
+      end
+      rmbMotion.move(opts['c_right_mode'])
+      local row_motion = vim.fn.line('.')
+      local shift
+      if rmbMotion.dir == -1 then
+        shift = row_motion - r1
+      elseif rmbMotion.dir == 1 then
+        shift = row_motion - r2
+      else
+        error(tostring(rmbMotion.dir))
+      end
+      move_range_rel(r1, r2, shift)
+      setSelect(
+        r1 + shift,
+        c1,
+        r2 + shift,
+        c2,
+        dir
+      )
+      sendKeys('<C-g>V<C-g>', 'n')
+    else
+      error(tostring(opts['submode']))
+    end
+  end
+
+  -- if single line and not Select-Line: move by 1 char
+  -- if multi line or Select-Line: indent/dedent
+  local function rmbMoveSelLeft(opts) rmbMoveSel(rmbMotionLeft, opts) end
+  local function rmbMoveSelRight(opts) rmbMoveSel(rmbMotionRight, opts) end
+
+  -- only single line
+  local function rmbMoveSelCLeft(opts) rmbMoveSel(rmbMotionCLeft, opts) end
+  local function rmbMoveSelCRight(opts) rmbMoveSel(rmbMotionCRight, opts) end
+  local function rmbMoveSelHome(opts) rmbMoveSel(rmbMotionHome, opts) end
+  local function rmbMoveSelEnd(opts) rmbMoveSel(rmbMotionEnd, opts) end
+
+  -- if Select:
+  --   if multiline: switch to S-Line
+  --   if no multiline: move text
+  -- if Select-Line: move Lines
+  local function rmbMoveSelUp(opts) rmbMoveSel(rmbMotionUp, opts) end
+  local function rmbMoveSelCUp(opts) rmbMoveSel(rmbMotionCUp, opts) end
+  local function rmbMoveSelPageUp(opts) rmbMoveSel(rmbMotionPageUp, opts) end
+  local function rmbMoveSelCHome(opts) rmbMoveSel(rmbMotionCHome, opts) end
+  local function rmbMoveSelDown(opts) rmbMoveSel(rmbMotionDown, opts) end
+  local function rmbMoveSelCDown(opts) rmbMoveSel(rmbMotionCDown, opts) end
+  local function rmbMoveSelPageDown(opts) rmbMoveSel(rmbMotionPageDown, opts) end
+  local function rmbMoveSelCEnd(opts) rmbMoveSel(rmbMotionCEnd, opts) end
 
   local rmbMotionCRight_cfg = {
     dir = rmbMotionCRight.dir,
@@ -1108,6 +1124,10 @@ function M.setup(cfg)
       end,
     })
   end
+
+  ------------------------------------------------------------------------------
+  -- Rambo.nvim Keybindings
+  ------------------------------------------------------------------------------
 
   -- Fix inserting tab in select mode -----------------------------------------------
 
@@ -1623,17 +1643,18 @@ function M.setup(cfg)
 
   -- Wrapping utilities: (), [], {}, "", '', <>
   for _, wrap_spec in pairs({
-    {'(', '( ', ' )'}, {')', '(', ')'},
-    {'[', '[ ', ' ]'}, {']', '[', ']'},
-    {'{', '{ ', ' }'}, {'}', '{', '}'},
-    {'<', '< ', ' >'}, {'>', '<', '>'},
+    {'(', '( ', ' )'},
+    {')', '(', ')'},
+    {'[', '[ ', ' ]'},
+    {']', '[', ']'},
+    {'{', '{ ', ' }'},
+    {'}', '{', '}'},
+    {'<', '< ', ' >'},
+    {'>', '<', '>'},
     {'"', '"', '"'},
     {"'", "'", "'"},
     {"`", "`", "`"},
     {"*", "*", "*"},
-    -- commented because user can repeat it manually
-    -- {'"""', '"""', '"""'},
-    -- {"```", "```", "```"},
     }) do
     local key, op, cl = wrap_spec[1], wrap_spec[2], wrap_spec[3]
     --
