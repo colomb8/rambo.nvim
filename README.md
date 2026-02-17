@@ -2,10 +2,20 @@
 
 A Neovim plugin that supercharges Insert Mode with modern editing behavior.
 
-[Watch a non-exhaustive showcase here](https://youtu.be/0BSQpgzkqsc)
+<p align="center">
+  <a
+    href="https://youtu.be/0BSQpgzkqsc">
+    Watch a non-exhaustive showcase here
+  </a>
+</p>
 
-
-<p align="center"><img src="media/Rambo-1200x900.jpg" alt="insert mode with no mercy" width="300"/></p>
+<p align="center">
+  <img 
+    src="media/Rambo-1200x900.jpg"
+    alt="insert mode with no mercy"
+    width="300"
+  />
+</p>
 
 >Image used under fair use, for illustrative and non-commercial purposes. All rights to the character and image belong to their respective owners.
 
