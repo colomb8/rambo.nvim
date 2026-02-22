@@ -1,20 +1,16 @@
-------------------------------------------------------------------------------
---[[
-
-Rambo.nvim
-
-Author: Dario Colombotto
-  email: dario.colombotto@outlook.com
-  Telegram: https://t.me/colomb8
-
-License: MIT (see LICENSE)
-
---]]
-------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
 -- Lua/Neovim Utility Functions
 ------------------------------------------------------------------------------
+
+local function utf8_reverse(str)
+  local len = vim.fn.strchars(str)
+  local out = {}
+  for i = len - 1, 0, -1 do
+    table.insert(out, vim.fn.strcharpart(str, i, 1))
+  end
+  return table.concat(out)
+end
 
 local function splitStr(str, sep)
   sep = sep or '%s'
@@ -331,22 +327,22 @@ function M.setup(cfg)
     '`c_right_mode` supports only "eow" or "bow"; received: '
     .. tostring(cfg.c_right_mode))
 
+  assert(
+    vim.list_contains({'', '<C-q>', '<C-g>'}, cfg.op_prefix),
+    '`op_prefix` supports only "", "<C-q>", "<C-g>"; received: '
+    .. tostring(cfg.op_prefix))
+
+  for _, v in ipairs(cfg.synced_registers_tbl) do
     assert(
-      vim.list_contains({'', '<C-q>', '<C-g>'}, cfg.op_prefix),
-      '`op_prefix` supports only "", "<C-q>", "<C-g>"; received: '
-      .. tostring(cfg.op_prefix))
+      type(v) == "string" and #v == 1,
+      '`synced_registers_tbl` supports only Vim registers names; received: '
+      .. tostring(v))
+    end
 
-      for _, v in ipairs(cfg.synced_registers_tbl) do
-        assert(
-          type(v) == "string" and #v == 1,
-          '`synced_registers_tbl` supports only Vim registers names; received: '
-          .. tostring(v))
-        end
-
-        assert(
-          cfg.sync_custom_fun == nil or type(cfg.sync_custom_fun) == 'function',
-          '`sync_custom_fun` must be nil or a function; received: '
-          .. tostring(type(cfg.sync_custom_fun)))
+  assert(
+    cfg.sync_custom_fun == nil or type(cfg.sync_custom_fun) == 'function',
+    '`sync_custom_fun` must be nil or a function; received: '
+    .. tostring(type(cfg.sync_custom_fun)))
 
   ------------------------------------------------------------------------------
   -- Rambo.nvim sync vim registers
@@ -428,7 +424,7 @@ function M.setup(cfg)
     col = col or 1
     local r = vim.regex(""
       .. "\\%" .. col .. "c"  -- Matches in a specific column
-      .. "."                  -- Matches 1 car UTF-8 safe
+      .. "."                  -- Matches 1 char UTF-8 safe
     )
     local _, to = r:match_str(line)
     return to and to + 1
@@ -439,12 +435,12 @@ function M.setup(cfg)
     -- vim.regex uses vim.o.iskeyword !
     local r = vim.regex(""
       .. "\\("
-        -- punct/symbol              ,  kw or blank
+        -- punct/symbol,                kw or blank
         .. "[^[:keyword:][:blank:]]" .. "[[:keyword:][:blank:]]"
       .. "\\)"
       .. "\\|" -- or
       .. "\\("
-        -- kw              ,  blank or punct/symbol
+        -- kw,                blank or punct/symbol
         .. "[[:keyword:]]" .. "[^[:keyword:]]"
       .. "\\)"
     )
@@ -457,12 +453,12 @@ function M.setup(cfg)
     -- vim.regex uses vim.o.iskeyword !
     local r = vim.regex(""
       .. "\\("
-        -- kw or blank            ,  punct/symbol
+      -- kw or blank,                punct/symbol
       .. "[[:keyword:][:blank:]]" .. "[^[:keyword:][:blank:]]"
       .. "\\)"
       .. "\\|" -- or
       .. "\\("
-        -- blank or punct/symbol, kw
+         -- blank or punct/symbol, kw
          .. "[^[:keyword:]]" .. "[[:keyword:]]"
       .. "\\)"
     )
@@ -471,8 +467,7 @@ function M.setup(cfg)
   end
 
   local function getLastBeginningOfWord(line)
-    -- vim.regex uses vim.o.iskeyword !
-    local tmp = getFirstEndOfWord(line:reverse())
+    local tmp = getFirstEndOfWord(utf8_reverse(line))
     return tmp and line:len() - tmp + 1
   end
 
@@ -480,7 +475,7 @@ function M.setup(cfg)
     -- vim.regex uses vim.o.iskeyword !
     local r = vim.regex(""
       .. "\\("
-        -- blank         ,  kw or punct/symbol
+        -- blank,           kw or punct/symbol
         .. "[[:blank:]]" .. "[^[:blank:]]"
       .. "\\)"
     )
@@ -1304,6 +1299,14 @@ function M.setup(cfg)
 
   -- Move Lines ------------------------------------------------------
 
+  -- -- Insert mode: Copy -> No Op.
+  -- vim.keymap.set('i', getOpMappingLhs('c'), '<NOP>',
+  --   { desc = '' })
+  --
+  -- -- Insert mode: Cut -> No Op.
+  -- vim.keymap.set('i', getOpMappingLhs('x'), '<NOP>',
+  --   { desc = '' })
+
   -- When try to do a line op in insert mode,
   -- at first switch to Select-Line
   for _, k in ipairs({
@@ -1331,6 +1334,8 @@ function M.setup(cfg)
     '<C-M-KPAGEUP>',
     '<C-M-PAGEDOWN>',
     '<C-M-KPAGEDOWN>',
+    getOpMappingLhs('c'),
+    getOpMappingLhs('x'),
   }) do
     vim.keymap.set('i', k, '<C-\\><C-o>V0<C-g>')
   end
@@ -1512,14 +1517,6 @@ function M.setup(cfg)
   vim.keymap.set('s', getOpMappingLhs('v'), function()
     rmbPaste({ submode = 'select' }) end,
     { desc = 'Paste' })
-
-  -- -- Insert mode: Copy -> No Op.
-  -- vim.keymap.set('i', getOpMappingLhs('c'), '<NOP>',
-  --   { desc = '' })
-
-  -- -- Insert mode: Cut -> No Op.
-  -- vim.keymap.set('i', '<C-x>', '<NOP>',
-  --   { desc = '' })
 
   -- Insert mode: Paste from rambo_register_lines
   vim.keymap.set('i', getOpMappingLhs('v'), function()
