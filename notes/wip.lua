@@ -3,6 +3,37 @@
 -- Scratch / Notes
 ------------------------------------------------------------------------------
 
+--[[
+IP< import pynvim
+
+il path si legge con :echo v:servername
+
+IP< nvim = pynvim.attach('socket', path='/run/user/1000//nvim
+    .1046.0')
+
+IP< nvim.current.line
+IP> 'Io benissimo'
+
+IP< nvim.current.line = 'ciao'
+
+IP< nvim.current.line = 'suca 😂 mario'
+
+IP< def send(keys):
+        tmp = nvim.api.replace_termcodes(keys, True, False, T
+    rue)
+        nvim.api.input(tmp)
+
+
+IP< send('zzz')
+
+IP< send('<Esc>')
+
+IP< send('k$viw<C-g>')
+
+IP< send('k$viw')
+
+--]]
+
 --[[ test playground
 
 reg

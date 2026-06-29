@@ -27,7 +27,8 @@ local function sendKeys(keys, mode)
   vim.api.nvim_feedkeys(
     vim.api.nvim_replace_termcodes(keys, true, false, true),
     mode,
-    false)
+    false
+  )
 end
 
 local function move_range_rel(r1, r2, shift)
@@ -1299,14 +1300,6 @@ function M.setup(cfg)
 
   -- Move Lines ------------------------------------------------------
 
-  -- -- Insert mode: Copy -> No Op.
-  -- vim.keymap.set('i', getOpMappingLhs('c'), '<NOP>',
-  --   { desc = '' })
-  --
-  -- -- Insert mode: Cut -> No Op.
-  -- vim.keymap.set('i', getOpMappingLhs('x'), '<NOP>',
-  --   { desc = '' })
-
   -- When try to do a line op in insert mode,
   -- at first switch to Select-Line
   for _, k in ipairs({
@@ -1482,6 +1475,14 @@ function M.setup(cfg)
   end
 
   -- Operations ----------------------------------------------------------------
+
+  -- -- Insert mode: Copy -> No Op.
+  -- vim.keymap.set('i', getOpMappingLhs('c'), '<NOP>',
+  --   { desc = '' })
+  --
+  -- -- Insert mode: Cut -> No Op.
+  -- vim.keymap.set('i', getOpMappingLhs('x'), '<NOP>',
+  --   { desc = '' })
 
   -- Select mode: Copy to { ", rambo_register_lines }
   vim.keymap.set('s', getOpMappingLhs('c'), function()
