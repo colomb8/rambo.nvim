@@ -88,6 +88,7 @@ local function insertLines(row, lines)
 end
 
 local function setCursor(row, col)
+  if row == nil or col == nil then return end
   vim.api.nvim_win_set_cursor(
     0, -- buffer, 0 for current
     {
@@ -428,7 +429,7 @@ function M.setup(cfg)
       .. "."                  -- Matches 1 char UTF-8 safe
     )
     local _, to = r:match_str(line)
-    return to and to + 1
+    return (to and to + 1) or (col + 1)
   end
 
   local function getFirstEndOfWord(line)
