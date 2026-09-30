@@ -12,7 +12,7 @@ A Neovim plugin that supercharges Insert Mode with modern editing behavior.
 ---
 
 <p align="center">
-  <img 
+  <img
     src="media/Rambo-1200x900.jpg"
     alt="insert mode with no mercy"
     width="300"
